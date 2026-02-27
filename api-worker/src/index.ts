@@ -25,7 +25,7 @@ const app = new Hono<{ Bindings: Env }>();
 // CORS — reads FRONTEND_URL from env at request time
 app.use("*", async (c, next) => {
   const frontendUrl = c.env.FRONTEND_URL || "https://vibe-bounty.pages.dev";
-  const allowed = [frontendUrl, "https://vibe-bounty.pages.dev", "http://localhost:3000"];
+  const allowed = [frontendUrl, "https://vibe-bounty.pages.dev", "https://vibe-bounty-web.seefeldmaxwell1.workers.dev", "http://localhost:3000"];
   const handler = cors({
     origin: (origin) => {
       if (!origin) return frontendUrl;
