@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import {
-  Trophy, Crown, Medal, Star, DollarSign, Users, ArrowUpRight, Flame, Target, Loader2,
+  Trophy, Crown, Medal, Star, DollarSign, Users, ArrowUpRight, Flame, Target, Loader2, AlertTriangle,
 } from "lucide-react";
 import { cn, formatCurrency } from "@/lib/utils";
 import { api } from "@/lib/api";
@@ -32,14 +32,17 @@ export default function LeaderboardPage() {
   const [posters, setPosters] = useState<LeaderboardUser[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const [error, setError] = useState(false);
+
   useEffect(() => {
     setLoading(true);
+    setError(false);
     api.leaderboard(activeTab)
       .then((data) => {
         if (activeTab === "builders") setBuilders(data);
         else setPosters(data);
       })
-      .catch(() => {})
+      .catch(() => setError(true))
       .finally(() => setLoading(false));
   }, [activeTab]);
 
@@ -82,6 +85,14 @@ export default function LeaderboardPage() {
         {loading ? (
           <div className="flex justify-center py-20">
             <Loader2 className="w-8 h-8 animate-spin text-accent" />
+          </div>
+        ) : error ? (
+          <div className="glass rounded-xl p-16 text-center">
+            <AlertTriangle className="h-8 w-8 text-danger mx-auto mb-3" />
+            <p className="text-muted-foreground mb-4">Failed to load leaderboard</p>
+            <button onClick={() => { setError(false); setLoading(true); api.leaderboard(activeTab).then((d) => { if (activeTab === "builders") setBuilders(d); else setPosters(d); }).catch(() => setError(true)).finally(() => setLoading(false)); }} className="text-sm text-accent hover:text-accent-hover font-mono">
+              Try again
+            </button>
           </div>
         ) : users.length === 0 ? (
           <div className="glass rounded-xl p-16 text-center">
@@ -130,7 +141,7 @@ function BuilderLeaderboard({ users }: { users: LeaderboardUser[] }) {
         </div>
       )}
 
-      <div className="grid grid-cols-12 gap-4 px-4 py-2 text-[10px] font-mono uppercase tracking-wider text-muted-foreground">
+      <div className="hidden md:grid grid-cols-12 gap-4 px-4 py-2 text-[10px] font-mono uppercase tracking-wider text-muted-foreground">
         <div className="col-span-1">Rank</div>
         <div className="col-span-5">Builder</div>
         <div className="col-span-2 text-right">Reputation</div>
@@ -141,21 +152,36 @@ function BuilderLeaderboard({ users }: { users: LeaderboardUser[] }) {
       {users.slice(3).map((user, index) => {
         const rank = index + 4;
         return (
-          <Link key={user.id} href={`/profile/${user.username}`} className="glass glass-hover rounded-xl grid grid-cols-12 gap-4 items-center px-4 py-4 transition-all group">
-            <div className="col-span-1"><span className="font-mono text-lg font-bold text-muted-foreground group-hover:text-foreground transition-colors">{rank}</span></div>
-            <div className="col-span-5 flex items-center gap-3 min-w-0">
+          <Link key={user.id} href={`/profile/${user.username}`} className="glass glass-hover rounded-xl flex flex-col md:grid md:grid-cols-12 gap-2 md:gap-4 items-start md:items-center px-4 py-4 transition-all group">
+            <div className="md:col-span-1 flex items-center gap-3 md:block">
+              <span className="font-mono text-lg font-bold text-muted-foreground group-hover:text-foreground transition-colors">{rank}</span>
+              <div className="flex items-center gap-3 md:hidden min-w-0">
+                <img src={user.avatar_url || `https://api.dicebear.com/9.x/bottts-neutral/svg?seed=${user.username}`} alt={user.username} className="h-10 w-10 rounded-full ring-1 ring-white/10 flex-shrink-0" />
+                <div className="min-w-0">
+                  <h3 className="font-mono text-sm font-semibold truncate group-hover:text-accent transition-colors">{user.display_name || user.username}</h3>
+                  <p className="text-xs text-muted-foreground">@{user.username}</p>
+                </div>
+              </div>
+            </div>
+            <div className="hidden md:flex md:col-span-5 items-center gap-3 min-w-0">
               <img src={user.avatar_url || `https://api.dicebear.com/9.x/bottts-neutral/svg?seed=${user.username}`} alt={user.username} className="h-10 w-10 rounded-full ring-1 ring-white/10 flex-shrink-0" />
               <div className="min-w-0">
                 <h3 className="font-mono text-sm font-semibold truncate group-hover:text-accent transition-colors">{user.display_name || user.username}</h3>
                 <p className="text-xs text-muted-foreground">@{user.username}</p>
               </div>
             </div>
-            <div className="col-span-2 text-right"><span className="font-mono text-sm font-semibold text-accent">{user.reputation?.toLocaleString()}</span></div>
-            <div className="col-span-2 text-right"><span className="font-mono text-sm font-semibold text-neon">{formatCurrency(user.total_earned || 0)}</span></div>
-            <div className="col-span-2 flex items-center justify-end gap-1">
-              <Trophy className="h-3.5 w-3.5 text-yellow-400" />
-              <span className="font-mono text-sm font-medium">{Math.floor((user.total_earned || 0) / 8000)}</span>
-              <ArrowUpRight className="h-3.5 w-3.5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity ml-1" />
+            <div className="flex md:contents gap-4 text-sm pl-8 md:pl-0">
+              <div className="md:col-span-2 md:text-right flex items-center gap-1 md:block">
+                <Star className="h-3 w-3 text-accent md:hidden" />
+                <span className="font-mono font-semibold text-accent">{user.reputation?.toLocaleString()}</span>
+                <span className="text-[10px] text-muted-foreground md:hidden ml-1">rep</span>
+              </div>
+              <div className="md:col-span-2 md:text-right"><span className="font-mono font-semibold text-neon">{formatCurrency(user.total_earned || 0)}</span></div>
+              <div className="md:col-span-2 flex items-center md:justify-end gap-1">
+                <Trophy className="h-3.5 w-3.5 text-yellow-400" />
+                <span className="font-mono font-medium">{Math.floor((user.total_earned || 0) / 8000)}</span>
+                <ArrowUpRight className="h-3.5 w-3.5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity ml-1 hidden md:block" />
+              </div>
             </div>
           </Link>
         );
@@ -192,7 +218,7 @@ function PosterLeaderboard({ users }: { users: LeaderboardUser[] }) {
         </div>
       )}
 
-      <div className="grid grid-cols-12 gap-4 px-4 py-2 text-[10px] font-mono uppercase tracking-wider text-muted-foreground">
+      <div className="hidden md:grid grid-cols-12 gap-4 px-4 py-2 text-[10px] font-mono uppercase tracking-wider text-muted-foreground">
         <div className="col-span-1">Rank</div>
         <div className="col-span-5">Poster</div>
         <div className="col-span-2 text-right">Bounties</div>
@@ -203,32 +229,36 @@ function PosterLeaderboard({ users }: { users: LeaderboardUser[] }) {
       {users.slice(3).map((user, index) => {
         const rank = index + 4;
         return (
-          <Link key={user.id} href={`/profile/${user.username}`} className="glass glass-hover rounded-xl grid grid-cols-12 gap-4 items-center px-4 py-4 transition-all group">
-            <div className="col-span-1"><span className="font-mono text-lg font-bold text-muted-foreground group-hover:text-foreground transition-colors">{rank}</span></div>
-            <div className="col-span-5 flex items-center gap-3 min-w-0">
+          <Link key={user.id} href={`/profile/${user.username}`} className="glass glass-hover rounded-xl flex flex-col md:grid md:grid-cols-12 gap-2 md:gap-4 items-start md:items-center px-4 py-4 transition-all group">
+            <div className="md:col-span-1 flex items-center gap-3 md:block">
+              <span className="font-mono text-lg font-bold text-muted-foreground group-hover:text-foreground transition-colors">{rank}</span>
+              <div className="flex items-center gap-3 md:hidden min-w-0">
+                <img src={user.avatar_url || `https://api.dicebear.com/9.x/bottts-neutral/svg?seed=${user.username}`} alt={user.username} className="h-10 w-10 rounded-full ring-1 ring-white/10 flex-shrink-0" />
+                <div className="min-w-0">
+                  <h3 className="font-mono text-sm font-semibold truncate group-hover:text-accent transition-colors">{user.display_name || user.username}</h3>
+                  <p className="text-xs text-muted-foreground">@{user.username}</p>
+                </div>
+              </div>
+            </div>
+            <div className="hidden md:flex md:col-span-5 items-center gap-3 min-w-0">
               <img src={user.avatar_url || `https://api.dicebear.com/9.x/bottts-neutral/svg?seed=${user.username}`} alt={user.username} className="h-10 w-10 rounded-full ring-1 ring-white/10 flex-shrink-0" />
               <div className="min-w-0">
                 <h3 className="font-mono text-sm font-semibold truncate group-hover:text-accent transition-colors">{user.display_name || user.username}</h3>
                 <p className="text-xs text-muted-foreground">@{user.username}</p>
               </div>
             </div>
-            <div className="col-span-2 text-right"><span className="font-mono text-sm font-medium">{Math.ceil((user.total_posted || 0) / 3000)}</span></div>
-            <div className="col-span-2 text-right"><span className="font-mono text-sm font-semibold text-neon">{formatCurrency(user.total_posted || 0)}</span></div>
-            <div className="col-span-2 flex items-center justify-end gap-1">
-              <Star className="h-3.5 w-3.5 text-accent" />
-              <span className="font-mono text-sm font-medium">{user.reputation?.toLocaleString()}</span>
-              <ArrowUpRight className="h-3.5 w-3.5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity ml-1" />
+            <div className="flex md:contents gap-4 text-sm pl-8 md:pl-0">
+              <div className="md:col-span-2 md:text-right"><span className="font-mono font-medium">{Math.ceil((user.total_posted || 0) / 3000)}</span><span className="text-[10px] text-muted-foreground md:hidden ml-1">bounties</span></div>
+              <div className="md:col-span-2 md:text-right"><span className="font-mono font-semibold text-neon">{formatCurrency(user.total_posted || 0)}</span></div>
+              <div className="md:col-span-2 flex items-center md:justify-end gap-1">
+                <Star className="h-3.5 w-3.5 text-accent" />
+                <span className="font-mono font-medium">{user.reputation?.toLocaleString()}</span>
+                <ArrowUpRight className="h-3.5 w-3.5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity ml-1 hidden md:block" />
+              </div>
             </div>
           </Link>
         );
       })}
-
-      {users.length === 0 && (
-        <div className="glass rounded-xl p-16 text-center">
-          <Users className="h-8 w-8 text-muted-foreground mx-auto mb-3" />
-          <p className="text-muted-foreground">No posters yet</p>
-        </div>
-      )}
     </div>
   );
 }
