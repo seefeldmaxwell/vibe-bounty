@@ -1,5 +1,6 @@
 import { Hono } from "hono";
 import type { Env } from "../index";
+import { stripHtml } from "../middleware/sanitize";
 
 function generateId() {
   return crypto.randomUUID().replace(/-/g, "").slice(0, 16);
@@ -160,9 +161,9 @@ export function bountyRoutes() {
       .bind(
         id,
         session.user_id,
-        body.title.trim(),
-        body.brief.trim(),
-        body.detailed_spec?.trim() || null,
+        stripHtml(body.title),
+        stripHtml(body.brief),
+        body.detailed_spec ? stripHtml(body.detailed_spec) : null,
         body.budget_min,
         body.budget_max,
         body.deadline || null,

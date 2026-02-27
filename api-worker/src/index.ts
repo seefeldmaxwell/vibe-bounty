@@ -1,5 +1,6 @@
 import { Hono } from "hono";
 import { cors } from "hono/cors";
+import { rateLimit } from "./middleware/rate-limit";
 import { authRoutes } from "./routes/auth";
 import { bountyRoutes } from "./routes/bounties";
 import { submissionRoutes } from "./routes/submissions";
@@ -37,6 +38,12 @@ app.use(
     credentials: true,
   })
 );
+
+// Global rate limit: 120 requests per minute per IP
+app.use("/api/*", rateLimit({ max: 120, windowMs: 60_000 }));
+
+// Stricter rate limit on auth endpoints: 20 per minute
+app.use("/api/auth/*", rateLimit({ max: 20, windowMs: 60_000, keyPrefix: "auth" }));
 
 // Health check
 app.get("/", (c) => c.json({ status: "ok", service: "vibe-bounty-api" }));

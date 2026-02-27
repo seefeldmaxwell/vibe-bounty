@@ -44,8 +44,8 @@ export default function SignupPage() {
       toast("Passwords don't match", "error");
       return;
     }
-    if (form.password.length < 6) {
-      toast("Password must be at least 6 characters", "error");
+    if (form.password.length < 8) {
+      toast("Password must be at least 8 characters", "error");
       return;
     }
     setLoading(true);

@@ -1,5 +1,6 @@
 import { Hono } from "hono";
 import type { Env } from "../index";
+import { stripHtml } from "../middleware/sanitize";
 
 function generateId() {
   return crypto.randomUUID().replace(/-/g, "").slice(0, 16);
@@ -134,8 +135,8 @@ export function submissionRoutes() {
           id,
           body.bounty_id,
           session.user_id,
-          body.title?.trim() || null,
-          body.description?.trim() || null,
+          body.title ? stripHtml(body.title) : null,
+          body.description ? stripHtml(body.description) : null,
           body.repo_url || null,
           body.tech_used ? JSON.stringify(body.tech_used) : null,
           previewUrl
@@ -246,7 +247,7 @@ export function submissionRoutes() {
       .prepare(
         "UPDATE submissions SET score = ?, feedback = ?, reviewed_at = datetime('now') WHERE id = ?"
       )
-      .bind(score, feedback?.trim() || null, id)
+      .bind(score, feedback ? stripHtml(feedback) : null, id)
       .run();
 
     return c.json({ success: true });

@@ -1,5 +1,6 @@
 import { Hono } from "hono";
 import type { Env } from "../index";
+import { stripHtml } from "../middleware/sanitize";
 
 function generateId() {
   return crypto.randomUUID().replace(/-/g, "").slice(0, 16);
@@ -109,6 +110,12 @@ export function authRoutes() {
       return c.json({ error: "Missing required fields" }, 400);
     }
 
+    // Validate inputs
+    if (username.length < 2 || username.length > 39) return c.json({ error: "Username must be 2-39 characters" }, 400);
+    if (!/^[a-zA-Z0-9_-]+$/.test(username)) return c.json({ error: "Username can only contain letters, numbers, hyphens, and underscores" }, 400);
+    if (password.length < 8) return c.json({ error: "Password must be at least 8 characters" }, 400);
+    if (password.length > 128) return c.json({ error: "Password too long" }, 400);
+
     const db = c.env.DB;
 
     // Check uniqueness
@@ -123,13 +130,14 @@ export function authRoutes() {
     const id = generateId();
     const passwordHash = await hashPassword(password);
     const userRole = role && ["poster", "builder", "both"].includes(role) ? role : "builder";
-    const avatarUrl = `https://api.dicebear.com/9.x/bottts-neutral/svg?seed=${username}`;
+    const cleanUsername = stripHtml(username);
+    const avatarUrl = `https://api.dicebear.com/9.x/bottts-neutral/svg?seed=${cleanUsername}`;
 
     await db
       .prepare(
         "INSERT INTO users (id, email, username, display_name, avatar_url, role, password_hash) VALUES (?, ?, ?, ?, ?, ?, ?)"
       )
-      .bind(id, email, username, username, avatarUrl, userRole, passwordHash)
+      .bind(id, email, cleanUsername, cleanUsername, avatarUrl, userRole, passwordHash)
       .run();
 
     const user = await db.prepare("SELECT * FROM users WHERE id = ?").bind(id).first();

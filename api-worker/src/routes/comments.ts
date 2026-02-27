@@ -1,5 +1,6 @@
 import { Hono } from "hono";
 import type { Env } from "../index";
+import { stripHtml } from "../middleware/sanitize";
 
 function generateId() {
   return crypto.randomUUID().replace(/-/g, "").slice(0, 16);
@@ -62,7 +63,7 @@ export function commentRoutes() {
       .prepare(
         "INSERT INTO comments (id, bounty_id, submission_id, user_id, content) VALUES (?, ?, ?, ?, ?)"
       )
-      .bind(id, bounty_id, submission_id || null, session.user_id, content.trim())
+      .bind(id, bounty_id, submission_id || null, session.user_id, stripHtml(content))
       .run();
 
     const comment = await db

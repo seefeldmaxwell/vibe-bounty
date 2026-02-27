@@ -1,5 +1,6 @@
 import { Hono } from "hono";
 import type { Env } from "../index";
+import { stripHtml } from "../middleware/sanitize";
 
 export function userRoutes() {
   const router = new Hono<{ Bindings: Env }>();
@@ -36,20 +37,27 @@ export function userRoutes() {
     if (!session) return c.json({ error: "Session expired" }, 401);
 
     const body = await c.req.json<Record<string, unknown>>();
+
+    // Validate lengths
+    if (body.display_name && String(body.display_name).length > 100) return c.json({ error: "Display name too long (max 100 chars)" }, 400);
+    if (body.bio && String(body.bio).length > 1000) return c.json({ error: "Bio too long (max 1000 chars)" }, 400);
+    if (body.role && !["poster", "builder", "both"].includes(String(body.role))) return c.json({ error: "Invalid role" }, 400);
+
     const updates: string[] = [];
     const values: unknown[] = [];
 
-    const allowedFields = [
-      "display_name",
-      "bio",
-      "avatar_url",
-      "github_url",
-      "portfolio_url",
-      "role",
-    ];
+    const textFields = new Set(["display_name", "bio"]);
+    const urlFields = new Set(["avatar_url", "github_url", "portfolio_url"]);
+    const enumFields = new Set(["role"]);
 
     for (const [key, value] of Object.entries(body)) {
-      if (allowedFields.includes(key)) {
+      if (textFields.has(key) && typeof value === "string") {
+        updates.push(`${key} = ?`);
+        values.push(stripHtml(value));
+      } else if (urlFields.has(key) && typeof value === "string") {
+        updates.push(`${key} = ?`);
+        values.push(value.trim());
+      } else if (enumFields.has(key) && typeof value === "string") {
         updates.push(`${key} = ?`);
         values.push(value);
       }
