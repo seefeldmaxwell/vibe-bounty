@@ -5,8 +5,9 @@ compatibility_date = "2025-02-10"
 [[d1_databases]]
 binding = "DB"
 database_name = "vibe-bounty-db"
-database_id = "placeholder-will-be-set-after-creation"
+database_id = "bbce3b61-dd6a-4209-870a-bafa5696530f"
 
-[[r2_buckets]]
-binding = "R2"
-bucket_name = "vibe-bounty-submissions"
+# Uncomment after enabling R2 in Cloudflare Dashboard
+# [[r2_buckets]]
+# binding = "R2"
+# bucket_name = "vibe-bounty-submissions"
