@@ -6,13 +6,43 @@ function generateId() {
   return crypto.randomUUID().replace(/-/g, "").slice(0, 16);
 }
 
-async function hashPassword(password: string): Promise<string> {
+function toHex(buf: ArrayBuffer): string {
+  return Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+async function hashPassword(password: string, salt?: string): Promise<string> {
   const encoder = new TextEncoder();
-  const data = encoder.encode(password);
-  const hash = await crypto.subtle.digest("SHA-256", data);
-  return Array.from(new Uint8Array(hash))
-    .map((b) => b.toString(16).padStart(2, "0"))
-    .join("");
+  const saltBytes = salt
+    ? new Uint8Array(salt.match(/.{2}/g)!.map((h) => parseInt(h, 16)))
+    : crypto.getRandomValues(new Uint8Array(16));
+  const saltHex = salt || toHex(saltBytes.buffer);
+
+  const keyMaterial = await crypto.subtle.importKey(
+    "raw",
+    encoder.encode(password),
+    "PBKDF2",
+    false,
+    ["deriveBits"]
+  );
+  const derived = await crypto.subtle.deriveBits(
+    { name: "PBKDF2", salt: saltBytes, iterations: 100_000, hash: "SHA-256" },
+    keyMaterial,
+    256
+  );
+  return `${saltHex}:${toHex(derived)}`;
+}
+
+async function verifyPassword(password: string, stored: string): Promise<boolean> {
+  if (stored.includes(":")) {
+    // PBKDF2 format: salt:hash
+    const [salt] = stored.split(":");
+    const computed = await hashPassword(password, salt);
+    return computed === stored;
+  }
+  // Legacy SHA-256 format (no salt) — for backward compat
+  const encoder = new TextEncoder();
+  const hash = await crypto.subtle.digest("SHA-256", encoder.encode(password));
+  return toHex(hash) === stored;
 }
 
 async function createSession(db: D1Database, userId: string): Promise<string> {
@@ -254,14 +284,18 @@ export function authRoutes() {
     }
 
     const db = c.env.DB;
-    const passwordHash = await hashPassword(password);
 
     const user = await db
-      .prepare("SELECT * FROM users WHERE email = ? AND password_hash = ?")
-      .bind(email, passwordHash)
+      .prepare("SELECT * FROM users WHERE email = ?")
+      .bind(email)
       .first();
 
-    if (!user) {
+    if (!user || !user.password_hash) {
+      return c.json({ error: "Invalid credentials" }, 401);
+    }
+
+    const valid = await verifyPassword(password, user.password_hash as string);
+    if (!valid) {
       return c.json({ error: "Invalid credentials" }, 401);
     }
 
@@ -283,11 +317,11 @@ export function authRoutes() {
     if (!session) return c.json({ error: "Session expired" }, 401);
 
     const user = await db
-      .prepare("SELECT * FROM users WHERE id = ?")
+      .prepare("SELECT id, google_id, microsoft_id, email, username, display_name, avatar_url, bio, role, reputation, total_earned, total_posted, github_url, portfolio_url, created_at FROM users WHERE id = ?")
       .bind(session.user_id)
       .first();
 
-    return c.json(stripSensitive(user));
+    return c.json(user);
   });
 
   return router;
