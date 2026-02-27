@@ -34,60 +34,156 @@ function stripSensitive(user: any) {
 export function authRoutes() {
   const router = new Hono<{ Bindings: Env }>();
 
-  // GitHub OAuth callback
-  router.post("/github", async (c) => {
-    const { code } = await c.req.json<{ code: string }>();
+  // Google OAuth callback
+  router.post("/google", async (c) => {
+    const { code, redirect_uri } = await c.req.json<{ code: string; redirect_uri: string }>();
     if (!code) return c.json({ error: "Missing code" }, 400);
 
     // Exchange code for access token
-    const tokenRes = await fetch("https://github.com/login/oauth/access_token", {
+    const tokenRes = await fetch("https://oauth2.googleapis.com/token", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Accept: "application/json",
-      },
-      body: JSON.stringify({
-        client_id: c.env.GITHUB_CLIENT_ID,
-        client_secret: c.env.GITHUB_CLIENT_SECRET,
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({
         code,
+        client_id: c.env.GOOGLE_CLIENT_ID,
+        client_secret: c.env.GOOGLE_CLIENT_SECRET,
+        redirect_uri: redirect_uri || "",
+        grant_type: "authorization_code",
       }),
     });
 
     const tokenData = await tokenRes.json<{ access_token?: string; error?: string }>();
     if (!tokenData.access_token) {
-      return c.json({ error: "GitHub OAuth failed" }, 401);
+      return c.json({ error: "Google OAuth failed" }, 401);
     }
 
-    // Get GitHub user info
-    const userRes = await fetch("https://api.github.com/user", {
+    // Get Google user info
+    const userRes = await fetch("https://www.googleapis.com/oauth2/v2/userinfo", {
       headers: { Authorization: `Bearer ${tokenData.access_token}` },
     });
-    const ghUser = await userRes.json<{
-      id: number;
-      login: string;
+    const gUser = await userRes.json<{
+      id: string;
+      email: string;
       name: string;
-      avatar_url: string;
-      bio: string;
-      html_url: string;
+      picture: string;
     }>();
 
     const db = c.env.DB;
-    const githubId = String(ghUser.id);
+    const googleId = gUser.id;
 
-    // Check if user exists
+    // Check if user exists by google_id or email
     let user = await db
-      .prepare("SELECT * FROM users WHERE github_id = ?")
-      .bind(githubId)
+      .prepare("SELECT * FROM users WHERE google_id = ?")
+      .bind(googleId)
       .first();
+
+    if (!user && gUser.email) {
+      user = await db
+        .prepare("SELECT * FROM users WHERE email = ?")
+        .bind(gUser.email)
+        .first();
+      if (user) {
+        // Link Google account to existing user
+        await db
+          .prepare("UPDATE users SET google_id = ?, avatar_url = COALESCE(avatar_url, ?) WHERE id = ?")
+          .bind(googleId, gUser.picture, user.id)
+          .run();
+        user = await db.prepare("SELECT * FROM users WHERE id = ?").bind(user.id).first();
+      }
+    }
 
     if (!user) {
       // Create new user
       const id = generateId();
+      const username = gUser.email
+        ? gUser.email.split("@")[0].replace(/[^a-zA-Z0-9_-]/g, "_").slice(0, 39)
+        : `user_${id.slice(0, 8)}`;
       await db
         .prepare(
-          "INSERT INTO users (id, github_id, username, display_name, avatar_url, bio, github_url) VALUES (?, ?, ?, ?, ?, ?, ?)"
+          "INSERT INTO users (id, google_id, email, username, display_name, avatar_url) VALUES (?, ?, ?, ?, ?, ?)"
         )
-        .bind(id, githubId, ghUser.login, ghUser.name, ghUser.avatar_url, ghUser.bio, ghUser.html_url)
+        .bind(id, googleId, gUser.email, username, gUser.name || username, gUser.picture)
+        .run();
+      user = await db.prepare("SELECT * FROM users WHERE id = ?").bind(id).first();
+    }
+
+    const sessionToken = await createSession(db, user!.id as string);
+
+    return c.json({ user: stripSensitive(user), token: sessionToken });
+  });
+
+  // Microsoft OAuth callback
+  router.post("/microsoft", async (c) => {
+    const { code, redirect_uri } = await c.req.json<{ code: string; redirect_uri: string }>();
+    if (!code) return c.json({ error: "Missing code" }, 400);
+
+    // Exchange code for access token
+    const tokenRes = await fetch("https://login.microsoftonline.com/common/oauth2/v2.0/token", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({
+        code,
+        client_id: c.env.MS_CLIENT_ID,
+        client_secret: c.env.MS_CLIENT_SECRET,
+        redirect_uri: redirect_uri || "",
+        grant_type: "authorization_code",
+        scope: "openid profile email User.Read",
+      }),
+    });
+
+    const tokenData = await tokenRes.json<{ access_token?: string; error?: string }>();
+    if (!tokenData.access_token) {
+      return c.json({ error: "Microsoft OAuth failed" }, 401);
+    }
+
+    // Get Microsoft user info
+    const userRes = await fetch("https://graph.microsoft.com/v1.0/me", {
+      headers: { Authorization: `Bearer ${tokenData.access_token}` },
+    });
+    const msUser = await userRes.json<{
+      id: string;
+      displayName: string;
+      mail: string;
+      userPrincipalName: string;
+    }>();
+
+    const db = c.env.DB;
+    const microsoftId = msUser.id;
+    const email = msUser.mail || msUser.userPrincipalName;
+
+    // Check if user exists by microsoft_id or email
+    let user = await db
+      .prepare("SELECT * FROM users WHERE microsoft_id = ?")
+      .bind(microsoftId)
+      .first();
+
+    if (!user && email) {
+      user = await db
+        .prepare("SELECT * FROM users WHERE email = ?")
+        .bind(email)
+        .first();
+      if (user) {
+        // Link Microsoft account to existing user
+        await db
+          .prepare("UPDATE users SET microsoft_id = ? WHERE id = ?")
+          .bind(microsoftId, user.id)
+          .run();
+        user = await db.prepare("SELECT * FROM users WHERE id = ?").bind(user.id).first();
+      }
+    }
+
+    if (!user) {
+      // Create new user
+      const id = generateId();
+      const username = email
+        ? email.split("@")[0].replace(/[^a-zA-Z0-9_-]/g, "_").slice(0, 39)
+        : `user_${id.slice(0, 8)}`;
+      const avatarUrl = `https://api.dicebear.com/9.x/bottts-neutral/svg?seed=${username}`;
+      await db
+        .prepare(
+          "INSERT INTO users (id, microsoft_id, email, username, display_name, avatar_url) VALUES (?, ?, ?, ?, ?, ?)"
+        )
+        .bind(id, microsoftId, email, username, msUser.displayName || username, avatarUrl)
         .run();
       user = await db.prepare("SELECT * FROM users WHERE id = ?").bind(id).first();
     }

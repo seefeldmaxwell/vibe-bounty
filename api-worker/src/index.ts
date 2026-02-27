@@ -12,8 +12,10 @@ import { previewRoutes } from "./routes/preview";
 export type Env = {
   DB: D1Database;
   R2: R2Bucket;
-  GITHUB_CLIENT_ID: string;
-  GITHUB_CLIENT_SECRET: string;
+  GOOGLE_CLIENT_ID: string;
+  GOOGLE_CLIENT_SECRET: string;
+  MS_CLIENT_ID: string;
+  MS_CLIENT_SECRET: string;
   JWT_SECRET: string;
   FRONTEND_URL: string;
 };

@@ -2,6 +2,14 @@ name = "vibe-bounty-api"
 main = "src/index.ts"
 compatibility_date = "2025-02-10"
 
+[vars]
+GOOGLE_CLIENT_ID = ""
+MS_CLIENT_ID = ""
+FRONTEND_URL = "https://vibe-bounty.pages.dev"
+
+# Set secrets via: wrangler secret put GOOGLE_CLIENT_SECRET
+# Set secrets via: wrangler secret put MS_CLIENT_SECRET
+
 [[d1_databases]]
 binding = "DB"
 database_name = "vibe-bounty-db"

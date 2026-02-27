@@ -5,16 +5,17 @@ import { useAuth } from "@/lib/auth-context";
 import { Loader2 } from "lucide-react";
 
 export default function AuthCallbackPage() {
-  const { loginWithGithub } = useAuth();
+  const { loginWithGoogle, loginWithMicrosoft } = useAuth();
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const code = params.get("code");
+    const state = params.get("state");
     const errorParam = params.get("error");
 
     if (errorParam) {
-      setError("GitHub authorization was denied.");
+      setError("Authorization was denied.");
       return;
     }
 
@@ -23,14 +24,27 @@ export default function AuthCallbackPage() {
       return;
     }
 
-    loginWithGithub(code)
-      .then(() => {
-        window.location.href = "/dashboard";
-      })
-      .catch((err) => {
-        setError(err.message || "Authentication failed");
-      });
-  }, [loginWithGithub]);
+    const redirectUri = `${window.location.origin}/auth/callback`;
+
+    if (state === "microsoft") {
+      loginWithMicrosoft(code, redirectUri)
+        .then(() => {
+          window.location.href = "/dashboard";
+        })
+        .catch((err) => {
+          setError(err.message || "Microsoft authentication failed");
+        });
+    } else {
+      // Default to Google
+      loginWithGoogle(code, redirectUri)
+        .then(() => {
+          window.location.href = "/dashboard";
+        })
+        .catch((err) => {
+          setError(err.message || "Google authentication failed");
+        });
+    }
+  }, [loginWithGoogle, loginWithMicrosoft]);
 
   return (
     <div className="min-h-screen flex items-center justify-center">
@@ -49,7 +63,7 @@ export default function AuthCallbackPage() {
         ) : (
           <div className="space-y-4">
             <Loader2 className="w-10 h-10 mx-auto animate-spin text-accent" />
-            <p className="text-muted-foreground font-mono">Authenticating with GitHub...</p>
+            <p className="text-muted-foreground font-mono">Authenticating...</p>
           </div>
         )}
       </div>

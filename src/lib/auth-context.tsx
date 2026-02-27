@@ -13,7 +13,8 @@ interface AuthState {
 interface AuthContextType extends AuthState {
   login: (email: string, password: string) => Promise<void>;
   signup: (data: { username: string; email: string; password: string; role?: string }) => Promise<void>;
-  loginWithGithub: (code: string) => Promise<void>;
+  loginWithGoogle: (code: string, redirectUri: string) => Promise<void>;
+  loginWithMicrosoft: (code: string, redirectUri: string) => Promise<void>;
   logout: () => void;
   refreshUser: () => Promise<void>;
 }
@@ -72,14 +73,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const loginWithGithub = async (code: string) => {
+  const loginWithGoogle = async (code: string, redirectUri: string) => {
     setState((s) => ({ ...s, loading: true, error: null }));
     try {
-      const { user, token } = await api.auth.github(code);
+      const { user, token } = await api.auth.google(code, redirectUri);
       localStorage.setItem("vb_token", token);
       setState({ user, loading: false, error: null });
     } catch (err) {
-      const message = err instanceof ApiError ? err.message : "GitHub login failed";
+      const message = err instanceof ApiError ? err.message : "Google login failed";
+      setState((s) => ({ ...s, loading: false, error: message }));
+      throw err;
+    }
+  };
+
+  const loginWithMicrosoft = async (code: string, redirectUri: string) => {
+    setState((s) => ({ ...s, loading: true, error: null }));
+    try {
+      const { user, token } = await api.auth.microsoft(code, redirectUri);
+      localStorage.setItem("vb_token", token);
+      setState({ user, loading: false, error: null });
+    } catch (err) {
+      const message = err instanceof ApiError ? err.message : "Microsoft login failed";
       setState((s) => ({ ...s, loading: false, error: message }));
       throw err;
     }
@@ -91,7 +105,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ ...state, login, signup, loginWithGithub, logout, refreshUser }}>
+    <AuthContext.Provider value={{ ...state, login, signup, loginWithGoogle, loginWithMicrosoft, logout, refreshUser }}>
       {children}
     </AuthContext.Provider>
   );

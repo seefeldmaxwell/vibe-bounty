@@ -1,6 +1,7 @@
 export interface User {
   id: string;
-  github_id?: string;
+  google_id?: string;
+  microsoft_id?: string;
   email?: string;
   username: string;
   display_name?: string;

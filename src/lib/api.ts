@@ -43,10 +43,15 @@ export class ApiError extends Error {
 // Auth
 export const api = {
   auth: {
-    github: (code: string) =>
-      request<{ user: any; token: string }>("/api/auth/github", {
+    google: (code: string, redirect_uri: string) =>
+      request<{ user: any; token: string }>("/api/auth/google", {
         method: "POST",
-        body: JSON.stringify({ code }),
+        body: JSON.stringify({ code, redirect_uri }),
+      }),
+    microsoft: (code: string, redirect_uri: string) =>
+      request<{ user: any; token: string }>("/api/auth/microsoft", {
+        method: "POST",
+        body: JSON.stringify({ code, redirect_uri }),
       }),
     login: (email: string, password: string) =>
       request<{ user: any; token: string }>("/api/auth/login", {
