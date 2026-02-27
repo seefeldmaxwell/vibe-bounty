@@ -57,8 +57,8 @@ export default function SubmissionDetailClient({ id }: { id: string }) {
       <div className="border-b border-border bg-surface/50 backdrop-blur-sm sticky top-16 z-20">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center gap-4">
-            <Link href={`/bounties/${bountyId}`} className="p-2 rounded-lg hover:bg-card text-muted-foreground hover:text-foreground transition-colors">
-              <ArrowLeft className="w-5 h-5" />
+            <Link href={`/bounties/${bountyId}`} className="p-2 rounded-lg hover:bg-card text-muted-foreground hover:text-foreground transition-colors group">
+              <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
             </Link>
             <div className="flex-1 min-w-0">
               <h1 className="text-xl font-bold font-mono text-foreground truncate">{submission.title ?? "Untitled Submission"}</h1>
@@ -70,7 +70,7 @@ export default function SubmissionDetailClient({ id }: { id: string }) {
       </div>
 
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="relative aspect-video bg-black/50 rounded-2xl border border-border overflow-hidden mb-8">
+        <div className="relative aspect-video bg-black/50 rounded-2xl border border-border overflow-hidden mb-8 animate-fade-in-up">
           {submission.preview_url ? (
             <iframe src={submission.preview_url} title={submission.title ?? "Preview"} className="w-full h-full" sandbox="allow-scripts allow-same-origin" />
           ) : (
@@ -94,7 +94,7 @@ export default function SubmissionDetailClient({ id }: { id: string }) {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <div className="lg:col-span-2 space-y-6">
+          <div className="lg:col-span-2 space-y-6 animate-fade-in-up" style={{ animationDelay: "0.15s" }}>
             <div className="glass rounded-2xl border border-border p-6">
               <h2 className="text-lg font-bold font-mono text-foreground mb-4">Description</h2>
               <p className="text-muted-foreground leading-relaxed whitespace-pre-wrap">{submission.description ?? "No description provided."}</p>

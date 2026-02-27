@@ -56,8 +56,8 @@ export default function ReviewPortalClient({ id }: { id: string }) {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-4 min-w-0">
-              <Link href={`/bounties/${bounty.id}`} className="p-2 rounded-lg hover:bg-card text-muted-foreground hover:text-foreground transition-colors shrink-0">
-                <ArrowLeft className="w-5 h-5" />
+              <Link href={`/bounties/${bounty.id}`} className="p-2 rounded-lg hover:bg-card text-muted-foreground hover:text-foreground transition-colors shrink-0 group">
+                <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
               </Link>
               <div className="min-w-0">
                 <h1 className="text-xl font-bold font-mono text-foreground truncate">Review Submissions</h1>
@@ -72,7 +72,7 @@ export default function ReviewPortalClient({ id }: { id: string }) {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="glass rounded-xl border border-border p-4 mb-8 flex items-center gap-8 flex-wrap">
+        <div className="glass rounded-xl border border-border p-4 mb-8 flex items-center gap-8 flex-wrap animate-fade-in-up">
           <div>
             <p className="text-xs text-muted-foreground font-mono">Total Submissions</p>
             <p className="text-2xl font-bold font-mono text-foreground">{submissions.length}</p>
@@ -98,7 +98,7 @@ export default function ReviewPortalClient({ id }: { id: string }) {
             <p className="text-muted-foreground text-sm max-w-md mx-auto">Builders are still working on their entries. Check back soon.</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 stagger-children">
             {submissions.map((submission: any) => (
               <SubmissionReviewCard key={submission.id} submission={submission} bountyId={id} onUpdate={refreshSubmissions} />
             ))}
@@ -149,7 +149,7 @@ function SubmissionReviewCard({ submission, bountyId, onUpdate }: { submission: 
   };
 
   return (
-    <div className="glass rounded-2xl border border-border overflow-hidden">
+    <div className="glass rounded-2xl border border-border overflow-hidden animate-fade-in-up card-hover">
       <div className="relative aspect-video bg-black/50 border-b border-border">
         {submission.preview_url ? (
           <iframe src={submission.preview_url} title={submission.title ?? "Preview"} className="w-full h-full" sandbox="allow-scripts allow-same-origin" />
