@@ -116,8 +116,8 @@ export default function SubmitToBountyClient({ id }: { id: string }) {
       <div className="border-b border-border bg-surface/50 backdrop-blur-sm sticky top-16 z-20">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center gap-4">
-            <Link href={`/bounties/${bounty.id}`} className="p-2 rounded-lg hover:bg-card text-muted-foreground hover:text-foreground transition-colors">
-              <ArrowLeft className="w-5 h-5" />
+            <Link href={`/bounties/${bounty.id}`} className="p-2 rounded-lg hover:bg-card text-muted-foreground hover:text-foreground transition-colors group">
+              <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
             </Link>
             <div>
               <h1 className="text-xl font-bold font-mono text-foreground">Submit to Bounty</h1>
@@ -128,7 +128,7 @@ export default function SubmitToBountyClient({ id }: { id: string }) {
       </div>
 
       <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="glass rounded-xl border border-border p-5 mb-8">
+        <div className="glass rounded-xl border border-border p-5 mb-8 animate-fade-in-up">
           <div className="flex items-start justify-between gap-4">
             <div className="min-w-0">
               <p className="text-xs font-mono text-muted-foreground mb-1">Submitting to</p>
@@ -142,7 +142,7 @@ export default function SubmitToBountyClient({ id }: { id: string }) {
           </div>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-6 animate-fade-in-up" style={{ animationDelay: "0.15s" }}>
           <div className="space-y-2">
             <label className="block text-sm font-medium text-foreground/80 font-mono">Submission Title</label>
             <div className="relative">

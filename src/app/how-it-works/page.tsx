@@ -177,27 +177,27 @@ export default function HowItWorksPage() {
 
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-16 relative z-10">
           <div className="text-center">
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-accent/10 border border-accent/20 text-accent text-sm font-mono mb-6">
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-accent/10 border border-accent/20 text-accent text-sm font-mono mb-6 animate-fade-in-up">
               <Rocket className="w-4 h-4" />
               How VibeBounty Works
             </div>
-            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold font-mono leading-tight mb-6">
+            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold font-mono leading-tight mb-6 animate-fade-in-up" style={{ animationDelay: "0.1s" }}>
               <span className="gradient-text">Ship projects.</span>
               <br />
               <span className="text-foreground">Earn bounties.</span>
             </h1>
-            <p className="text-lg text-muted-foreground max-w-2xl mx-auto mb-10">
+            <p className="text-lg text-muted-foreground max-w-2xl mx-auto mb-10 animate-fade-in-up" style={{ animationDelay: "0.2s" }}>
               VibeBounty connects project owners with talented builders. Post a
               bounty, get submissions, award the best. It&apos;s that simple.
             </p>
 
-            <div className="flex items-center justify-center gap-4 flex-wrap">
+            <div className="flex items-center justify-center gap-4 flex-wrap animate-fade-in-up" style={{ animationDelay: "0.3s" }}>
               <Link
                 href="/bounties"
-                className="inline-flex items-center gap-2 px-6 py-3 bg-accent hover:bg-accent-hover text-white font-semibold rounded-xl transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] glow-accent font-mono"
+                className="inline-flex items-center gap-2 px-6 py-3 bg-accent hover:bg-accent-hover text-white font-semibold rounded-xl transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] glow-accent font-mono group"
               >
                 Browse Bounties
-                <ArrowRight className="w-4 h-4" />
+                <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
               </Link>
               <Link
                 href="/bounties/new"
@@ -248,7 +248,7 @@ export default function HowItWorksPage() {
             Get your project built by the best talent in the community
           </p>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 stagger-children">
             {posterSteps.map((item) => (
               <div
                 key={item.step}
@@ -312,7 +312,7 @@ export default function HowItWorksPage() {
             Turn your skills into income by building real projects
           </p>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 stagger-children">
             {builderSteps.map((item) => (
               <div
                 key={item.step}

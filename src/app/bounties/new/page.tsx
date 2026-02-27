@@ -90,9 +90,9 @@ export default function NewBountyPage() {
           <div className="flex items-center gap-4">
             <Link
               href="/bounties"
-              className="p-2 rounded-lg hover:bg-card text-muted-foreground hover:text-foreground transition-colors"
+              className="p-2 rounded-lg hover:bg-card text-muted-foreground hover:text-foreground transition-colors group"
             >
-              <ArrowLeft className="w-5 h-5" />
+              <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
             </Link>
             <div>
               <h1 className="text-xl font-bold font-mono text-foreground">
@@ -109,7 +109,7 @@ export default function NewBountyPage() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
           {/* Form */}
-          <div className="lg:col-span-3">
+          <div className="lg:col-span-3 animate-fade-in-up">
             <form
               onSubmit={handleSubmit}
               className="space-y-6"
@@ -338,7 +338,7 @@ export default function NewBountyPage() {
           </div>
 
           {/* Preview Panel */}
-          <div className="lg:col-span-2">
+          <div className="lg:col-span-2 animate-fade-in-up" style={{ animationDelay: "0.15s" }}>
             <div className="sticky top-24">
               <div className="flex items-center gap-2 mb-4">
                 <Sparkles className="w-4 h-4 text-accent" />

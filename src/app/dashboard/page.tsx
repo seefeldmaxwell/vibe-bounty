@@ -236,7 +236,7 @@ export default function DashboardPage() {
     <div className="px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
       <div className="mx-auto max-w-7xl">
         {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8 animate-fade-in-up">
           <div>
             <h1 className="font-mono text-3xl sm:text-4xl font-bold mb-1">
               <LayoutDashboard className="inline h-8 w-8 mr-3 text-accent" />
@@ -334,8 +334,8 @@ function BuilderView({
   return (
     <div className="space-y-8">
       {/* Stats Row */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="glass rounded-xl p-6 group hover:border-accent/30 transition-colors">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 stagger-children">
+        <div className="glass rounded-xl p-6 group hover:border-accent/30 transition-colors card-hover animate-fade-in-up">
           <div className="flex items-center justify-between mb-4">
             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-accent/10">
               <Send className="h-5 w-5 text-accent" />
@@ -348,7 +348,7 @@ function BuilderView({
           <p className="text-sm text-muted-foreground">Submissions Made</p>
         </div>
 
-        <div className="glass rounded-xl p-6 group hover:border-neon/30 transition-colors">
+        <div className="glass rounded-xl p-6 group hover:border-neon/30 transition-colors card-hover animate-fade-in-up">
           <div className="flex items-center justify-between mb-4">
             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-neon/10">
               <DollarSign className="h-5 w-5 text-neon" />
@@ -361,7 +361,7 @@ function BuilderView({
           <p className="text-sm text-muted-foreground">Total Earned</p>
         </div>
 
-        <div className="glass rounded-xl p-6 group hover:border-yellow-500/30 transition-colors">
+        <div className="glass rounded-xl p-6 group hover:border-yellow-500/30 transition-colors card-hover animate-fade-in-up">
           <div className="flex items-center justify-between mb-4">
             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-yellow-500/10">
               <Trophy className="h-5 w-5 text-yellow-400" />
@@ -376,7 +376,7 @@ function BuilderView({
       </div>
 
       {/* Reputation Bar */}
-      <div className="glass rounded-xl p-6">
+      <div className="glass rounded-xl p-6 animate-fade-in-up" style={{ animationDelay: "0.25s" }}>
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-3">
             <img
@@ -417,7 +417,7 @@ function BuilderView({
       </div>
 
       {/* My Submissions */}
-      <div>
+      <div className="animate-fade-in-up" style={{ animationDelay: "0.35s" }}>
         <div className="flex items-center justify-between mb-4">
           <h2 className="font-mono text-lg font-bold">
             My <span className="text-accent">Submissions</span>
@@ -481,7 +481,7 @@ function BuilderView({
       </div>
 
       {/* Active Bounties */}
-      <div>
+      <div className="animate-fade-in-up" style={{ animationDelay: "0.45s" }}>
         <div className="flex items-center justify-between mb-4">
           <h2 className="font-mono text-lg font-bold">
             Active <span className="text-neon">Bounties</span>
@@ -568,8 +568,8 @@ function PosterView({
   return (
     <div className="space-y-8">
       {/* Stats Row */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="glass rounded-xl p-6 group hover:border-accent/30 transition-colors">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 stagger-children">
+        <div className="glass rounded-xl p-6 group hover:border-accent/30 transition-colors card-hover animate-fade-in-up">
           <div className="flex items-center justify-between mb-4">
             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-accent/10">
               <FileText className="h-5 w-5 text-accent" />
@@ -582,7 +582,7 @@ function PosterView({
           <p className="text-sm text-muted-foreground">Bounties Posted</p>
         </div>
 
-        <div className="glass rounded-xl p-6 group hover:border-neon/30 transition-colors">
+        <div className="glass rounded-xl p-6 group hover:border-neon/30 transition-colors card-hover animate-fade-in-up">
           <div className="flex items-center justify-between mb-4">
             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-neon/10">
               <DollarSign className="h-5 w-5 text-neon" />
@@ -595,7 +595,7 @@ function PosterView({
           <p className="text-sm text-muted-foreground">Total Spent</p>
         </div>
 
-        <div className="glass rounded-xl p-6 group hover:border-yellow-500/30 transition-colors">
+        <div className="glass rounded-xl p-6 group hover:border-yellow-500/30 transition-colors card-hover animate-fade-in-up">
           <div className="flex items-center justify-between mb-4">
             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-yellow-500/10">
               <Eye className="h-5 w-5 text-yellow-400" />
@@ -614,7 +614,7 @@ function PosterView({
       </div>
 
       {/* Quick Action Bar */}
-      <div className="glass rounded-xl p-4 flex flex-col sm:flex-row items-center gap-4">
+      <div className="glass rounded-xl p-4 flex flex-col sm:flex-row items-center gap-4 animate-fade-in-up" style={{ animationDelay: "0.25s" }}>
         <div className="flex items-center gap-3 flex-1">
           <img
             src={
@@ -644,7 +644,7 @@ function PosterView({
       </div>
 
       {/* My Bounties - Grouped by Status */}
-      <div>
+      <div className="animate-fade-in-up" style={{ animationDelay: "0.35s" }}>
         <h2 className="font-mono text-lg font-bold mb-5">
           My <span className="text-accent">Bounties</span>
         </h2>
@@ -697,7 +697,7 @@ function PosterView({
 
       {/* Submissions to Review */}
       {submissionsToReview.length > 0 && (
-        <div>
+        <div className="animate-fade-in-up" style={{ animationDelay: "0.45s" }}>
           <div className="flex items-center justify-between mb-4">
             <h2 className="font-mono text-lg font-bold">
               Pending{" "}

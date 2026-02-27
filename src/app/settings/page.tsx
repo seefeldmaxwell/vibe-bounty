@@ -106,7 +106,7 @@ export default function SettingsPage() {
     <div className="px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
       <div className="mx-auto max-w-3xl">
         {/* Header */}
-        <div className="mb-8">
+        <div className="mb-8 animate-fade-in-up">
           <h1 className="font-mono text-3xl sm:text-4xl font-bold mb-2">
             <Settings className="inline h-8 w-8 mr-3 text-accent" />
             Settings
@@ -118,7 +118,7 @@ export default function SettingsPage() {
 
         <div className="space-y-8">
           {/* ===================== PROFILE SECTION ===================== */}
-          <section>
+          <section className="animate-fade-in-up" style={{ animationDelay: "0.1s" }}>
             <div className="flex items-center gap-2 mb-5">
               <User className="h-5 w-5 text-accent" />
               <h2 className="font-mono text-lg font-bold">Profile</h2>
@@ -245,7 +245,7 @@ export default function SettingsPage() {
           </section>
 
           {/* ===================== ROLE SECTION ===================== */}
-          <section>
+          <section className="animate-fade-in-up" style={{ animationDelay: "0.2s" }}>
             <div className="flex items-center gap-2 mb-5">
               <Shield className="h-5 w-5 text-accent" />
               <h2 className="font-mono text-lg font-bold">Role</h2>
@@ -348,7 +348,7 @@ export default function SettingsPage() {
           </section>
 
           {/* ===================== PAYOUT SECTION ===================== */}
-          <section>
+          <section className="animate-fade-in-up" style={{ animationDelay: "0.3s" }}>
             <div className="flex items-center gap-2 mb-5">
               <Wallet className="h-5 w-5 text-neon" />
               <h2 className="font-mono text-lg font-bold">
@@ -428,7 +428,7 @@ export default function SettingsPage() {
           </section>
 
           {/* ===================== NOTIFICATIONS SECTION ===================== */}
-          <section>
+          <section className="animate-fade-in-up" style={{ animationDelay: "0.4s" }}>
             <div className="flex items-center gap-2 mb-5">
               <Bell className="h-5 w-5 text-accent" />
               <h2 className="font-mono text-lg font-bold">
@@ -501,7 +501,7 @@ export default function SettingsPage() {
           </div>
 
           {/* ===================== DANGER ZONE ===================== */}
-          <section>
+          <section className="animate-fade-in-up" style={{ animationDelay: "0.5s" }}>
             <div className="flex items-center gap-2 mb-5">
               <AlertTriangle className="h-5 w-5 text-danger" />
               <h2 className="font-mono text-lg font-bold text-danger">

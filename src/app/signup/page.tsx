@@ -77,7 +77,7 @@ export default function SignupPage() {
       </div>
 
       <div className="w-full max-w-lg relative z-10">
-        <div className="text-center mb-8">
+        <div className="text-center mb-8 animate-fade-in-up">
           <Link href="/" className="inline-flex items-center gap-2 group">
             <div className="w-10 h-10 rounded-lg bg-accent/20 border border-accent/30 flex items-center justify-center group-hover:bg-accent/30 transition-colors">
               <Zap className="w-5 h-5 text-accent" />
@@ -99,7 +99,7 @@ export default function SignupPage() {
           </div>
         </div>
 
-        <div className="glass rounded-2xl p-8 border border-border">
+        <div className="glass rounded-2xl p-8 border border-border animate-fade-in-up" style={{ animationDelay: "0.15s" }}>
           {step === 1 && (
             <div className="space-y-6">
               <div>

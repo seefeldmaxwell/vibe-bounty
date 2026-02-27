@@ -70,11 +70,11 @@ export default function ProfileClient({ username }: { username: string }) {
   return (
     <div className="px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
       <div className="mx-auto max-w-4xl">
-        <Link href="/leaderboard" className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground mb-8 font-mono transition-colors">
-          <ArrowLeft className="h-3.5 w-3.5" /> Leaderboard
+        <Link href="/leaderboard" className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground mb-8 font-mono transition-colors group">
+          <ArrowLeft className="h-3.5 w-3.5 group-hover:-translate-x-1 transition-transform" /> Leaderboard
         </Link>
 
-        <div className="glass rounded-2xl p-6 sm:p-8 mb-8">
+        <div className="glass rounded-2xl p-6 sm:p-8 mb-8 animate-fade-in-up">
           <div className="flex flex-col sm:flex-row items-start gap-6">
             <div className="relative flex-shrink-0">
               <img src={user.avatar_url || `https://api.dicebear.com/9.x/bottts-neutral/svg?seed=${user.username}`} alt={user.username} className="h-24 w-24 sm:h-28 sm:w-28 rounded-2xl ring-2 ring-accent/30 bg-card" />
@@ -105,30 +105,30 @@ export default function ProfileClient({ username }: { username: string }) {
           </div>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
-          <div className="glass rounded-xl p-4 text-center">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8 stagger-children">
+          <div className="glass rounded-xl p-4 text-center card-hover animate-fade-in-up">
             <div className="flex items-center justify-center gap-1.5 mb-2"><Star className="h-4 w-4 text-accent" /></div>
             <div className="font-mono text-xl sm:text-2xl font-bold text-accent">{(user.reputation || 0).toLocaleString()}</div>
             <p className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground mt-1">Reputation</p>
           </div>
-          <div className="glass rounded-xl p-4 text-center">
+          <div className="glass rounded-xl p-4 text-center card-hover animate-fade-in-up">
             <div className="flex items-center justify-center gap-1.5 mb-2"><DollarSign className="h-4 w-4 text-neon" /></div>
             <div className="font-mono text-xl sm:text-2xl font-bold text-neon">{formatCurrency(user.total_earned || 0)}</div>
             <p className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground mt-1">Earned</p>
           </div>
-          <div className="glass rounded-xl p-4 text-center">
+          <div className="glass rounded-xl p-4 text-center card-hover animate-fade-in-up">
             <div className="flex items-center justify-center gap-1.5 mb-2"><FileText className="h-4 w-4 text-yellow-400" /></div>
             <div className="font-mono text-xl sm:text-2xl font-bold">{formatCurrency(user.total_posted || 0)}</div>
             <p className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground mt-1">Posted</p>
           </div>
-          <div className="glass rounded-xl p-4 text-center">
+          <div className="glass rounded-xl p-4 text-center card-hover animate-fade-in-up">
             <div className="flex items-center justify-center gap-1.5 mb-2"><Calendar className="h-4 w-4 text-info" /></div>
             <div className="font-mono text-sm sm:text-base font-bold">{user.created_at ? formatDate(user.created_at) : "N/A"}</div>
             <p className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground mt-1">Member Since</p>
           </div>
         </div>
 
-        <div className="flex gap-1 mb-6">
+        <div className="flex gap-1 mb-6 animate-fade-in-up" style={{ animationDelay: "0.3s" }}>
           <button onClick={() => setActiveTab("bounties")} className={cn("flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-mono font-medium transition-all", activeTab === "bounties" ? "bg-accent/10 text-accent border border-accent/20" : "text-muted-foreground hover:text-foreground hover:bg-white/[0.02]")}>
             <FileText className="h-4 w-4" /> Bounties Posted <span className="text-xs opacity-60">({bounties.length})</span>
           </button>
@@ -138,7 +138,7 @@ export default function ProfileClient({ username }: { username: string }) {
         </div>
 
         {activeTab === "bounties" ? (
-          <div className="space-y-3">
+          <div className="space-y-3 animate-fade-in-up" style={{ animationDelay: "0.4s" }}>
             {bounties.length > 0 ? bounties.map((bounty: any) => (
               <Link key={bounty.id} href={`/bounties/${bounty.id}`} className="glass glass-hover rounded-xl p-5 block transition-all group">
                 <div className="flex items-start justify-between gap-4">
@@ -166,7 +166,7 @@ export default function ProfileClient({ username }: { username: string }) {
             )}
           </div>
         ) : (
-          <div className="space-y-3">
+          <div className="space-y-3 animate-fade-in-up" style={{ animationDelay: "0.4s" }}>
             {submissions.length > 0 ? submissions.map((sub: any) => (
               <Link key={sub.id} href={`/bounties/${sub.bounty_id}`} className="glass glass-hover rounded-xl p-5 block transition-all group">
                 <div className="flex items-start justify-between gap-4">
