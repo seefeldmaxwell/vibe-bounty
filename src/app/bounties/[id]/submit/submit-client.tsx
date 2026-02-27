@@ -18,7 +18,7 @@ export default function SubmitToBountyClient({ id }: { id: string }) {
   const [bounty, setBounty] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
-  const [form, setForm] = useState({ title: "", description: "", repoUrl: "", techUsed: "" });
+  const [form, setForm] = useState({ title: "", description: "", repoUrl: "", previewUrl: "", techUsed: "" });
   const [dragActive, setDragActive] = useState(false);
   const [files, setFiles] = useState<File[]>([]);
 
@@ -73,6 +73,7 @@ export default function SubmitToBountyClient({ id }: { id: string }) {
         title: form.title,
         description: form.description,
         repo_url: form.repoUrl || undefined,
+        preview_url: form.previewUrl || undefined,
         tech_used: parsedTech,
       });
 
@@ -163,6 +164,17 @@ export default function SubmitToBountyClient({ id }: { id: string }) {
               <Github className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <input type="url" value={form.repoUrl} onChange={(e) => updateField("repoUrl", e.target.value)} placeholder="https://github.com/you/your-repo" className="w-full pl-11 pr-4 py-3 bg-card border border-border rounded-xl text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-accent/50 focus:ring-1 focus:ring-accent/25 transition-colors text-sm font-mono" />
             </div>
+          </div>
+
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-foreground/80 font-mono">
+              Live Preview URL <span className="text-muted-foreground font-normal">(optional)</span>
+            </label>
+            <div className="relative">
+              <Upload className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <input type="url" value={form.previewUrl} onChange={(e) => updateField("previewUrl", e.target.value)} placeholder="https://your-demo.vercel.app" className="w-full pl-11 pr-4 py-3 bg-card border border-border rounded-xl text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-accent/50 focus:ring-1 focus:ring-accent/25 transition-colors text-sm font-mono" />
+            </div>
+            <p className="text-xs text-muted-foreground">Link to your deployed demo (Vercel, Netlify, etc.)</p>
           </div>
 
           <div className="space-y-2">
