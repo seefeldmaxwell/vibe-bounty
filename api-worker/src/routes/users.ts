@@ -64,7 +64,7 @@ export function userRoutes() {
       .run();
 
     const user = await db
-      .prepare("SELECT * FROM users WHERE id = ?")
+      .prepare("SELECT id, username, display_name, avatar_url, bio, role, reputation, total_earned, total_posted, github_url, portfolio_url, created_at FROM users WHERE id = ?")
       .bind(session.user_id)
       .first();
     return c.json(user);

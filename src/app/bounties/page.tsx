@@ -1,64 +1,121 @@
 "use client";
 
-import { useState, useMemo } from "react";
-import { Search, SlidersHorizontal, X } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Search, SlidersHorizontal } from "lucide-react";
 import { BountyCard } from "@/components/bounty-card";
-import { mockBounties } from "@/lib/mock-data";
+import { api } from "@/lib/api";
 import { CATEGORIES, DIFFICULTIES, cn } from "@/lib/utils";
+import { Bounty } from "@/lib/types";
 
 type SortOption = "newest" | "highest" | "deadline" | "submissions";
 
+function parseTags(val: any): string[] {
+  if (Array.isArray(val)) return val;
+  if (typeof val === "string") {
+    try {
+      return JSON.parse(val);
+    } catch {
+      return [];
+    }
+  }
+  return [];
+}
+
+function BountyCardSkeleton() {
+  return (
+    <div className="glass rounded-xl p-5 h-full flex flex-col animate-pulse">
+      <div className="flex items-start justify-between gap-3 mb-3">
+        <div className="flex items-center gap-2">
+          <div className="h-5 w-20 rounded-md bg-white/5" />
+          <div className="h-5 w-16 rounded-md bg-white/5" />
+        </div>
+        <div className="h-5 w-14 rounded-md bg-white/5" />
+      </div>
+      <div className="h-5 w-3/4 rounded bg-white/5 mb-2" />
+      <div className="h-4 w-full rounded bg-white/5 mb-1" />
+      <div className="h-4 w-2/3 rounded bg-white/5 mb-4 flex-1" />
+      <div className="h-6 w-40 rounded bg-white/5 mb-4" />
+      <div className="flex gap-1.5 mb-4">
+        <div className="h-5 w-12 rounded-md bg-white/5" />
+        <div className="h-5 w-16 rounded-md bg-white/5" />
+        <div className="h-5 w-10 rounded-md bg-white/5" />
+      </div>
+      <div className="flex items-center justify-between pt-3 border-t border-white/5">
+        <div className="h-3 w-24 rounded bg-white/5" />
+        <div className="flex items-center gap-2">
+          <div className="h-5 w-5 rounded-full bg-white/5" />
+          <div className="h-3 w-16 rounded bg-white/5" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function BountiesPage() {
-  const [search, setSearch] = useState("");
+  const [searchInput, setSearchInput] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [category, setCategory] = useState<string>("");
   const [difficulty, setDifficulty] = useState<string>("");
   const [sort, setSort] = useState<SortOption>("newest");
   const [showFilters, setShowFilters] = useState(false);
 
-  const filtered = useMemo(() => {
-    let result = [...mockBounties];
+  const [bounties, setBounties] = useState<Bounty[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [retryCount, setRetryCount] = useState(0);
 
-    if (search) {
-      const q = search.toLowerCase();
-      result = result.filter(
-        (b) =>
-          b.title.toLowerCase().includes(q) ||
-          b.brief.toLowerCase().includes(q) ||
-          b.tags.some((t) => t.toLowerCase().includes(q))
-      );
-    }
+  // Debounce the search input
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchInput);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchInput]);
 
-    if (category) {
-      result = result.filter((b) => b.category === category);
-    }
+  // Fetch bounties when filters change
+  useEffect(() => {
+    let cancelled = false;
 
-    if (difficulty) {
-      result = result.filter((b) => b.difficulty === difficulty);
-    }
+    async function fetchBounties() {
+      setLoading(true);
+      setError(null);
 
-    switch (sort) {
-      case "highest":
-        result.sort((a, b) => b.budget_max - a.budget_max);
-        break;
-      case "deadline":
-        result.sort((a, b) => {
-          if (!a.deadline) return 1;
-          if (!b.deadline) return -1;
-          return new Date(a.deadline).getTime() - new Date(b.deadline).getTime();
-        });
-        break;
-      case "submissions":
-        result.sort((a, b) => b.submission_count - a.submission_count);
-        break;
-      default:
-        result.sort(
-          (a, b) =>
-            new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      try {
+        const params: Record<string, string> = {};
+        if (debouncedSearch) params.search = debouncedSearch;
+        if (category) params.category = category;
+        if (difficulty) params.difficulty = difficulty;
+        if (sort) params.sort = sort;
+
+        const data = await api.bounties.list(
+          Object.keys(params).length > 0 ? params : undefined
         );
+
+        if (cancelled) return;
+
+        const parsed = (data ?? []).map((bounty: any) => ({
+          ...bounty,
+          tags: parseTags(bounty.tags),
+          tech_stack: parseTags(bounty.tech_stack),
+        }));
+
+        setBounties(parsed);
+      } catch (err: any) {
+        if (cancelled) return;
+        setError(err?.message || "Failed to load bounties");
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }
     }
 
-    return result;
-  }, [search, category, difficulty, sort]);
+    fetchBounties();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [debouncedSearch, category, difficulty, sort, retryCount]);
 
   const activeFilterCount = [category, difficulty].filter(Boolean).length;
 
@@ -83,8 +140,8 @@ export default function BountiesPage() {
             <input
               type="text"
               placeholder="Search bounties, tags..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
               className="w-full rounded-lg border border-border bg-card pl-10 pr-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-accent/50 focus:ring-1 focus:ring-accent/20 transition-colors"
             />
           </div>
@@ -123,7 +180,7 @@ export default function BountiesPage() {
 
         {/* Filter panels */}
         {showFilters && (
-          <div className="glass rounded-xl p-5 mb-6 space-y-4">
+          <div className="glass rounded-xl p-5 mb-6 space-y-4 animate-fade-in-down" style={{ animationDuration: "0.2s" }}>
             <div className="flex items-center justify-between">
               <span className="font-mono text-sm font-semibold">Filters</span>
               {activeFilterCount > 0 && (
@@ -191,23 +248,61 @@ export default function BountiesPage() {
           </div>
         )}
 
-        {/* Results count */}
-        <div className="mb-4 text-sm text-muted-foreground font-mono">
-          {filtered.length} bounties found
-        </div>
+        {/* Error state */}
+        {error && (
+          <div className="glass rounded-xl p-6 mb-6 border border-danger/30 bg-danger/5">
+            <p className="text-danger text-sm font-mono mb-2">
+              Failed to load bounties
+            </p>
+            <p className="text-muted-foreground text-sm mb-3">{error}</p>
+            <button
+              onClick={() => {
+                setError(null);
+                setRetryCount((c) => c + 1);
+              }}
+              className="text-xs text-accent hover:underline font-mono"
+            >
+              Try again
+            </button>
+          </div>
+        )}
 
-        {/* Grid */}
-        {filtered.length > 0 ? (
+        {/* Results count */}
+        {!loading && !error && (
+          <div className="mb-4 text-sm text-muted-foreground font-mono animate-fade-in">
+            {bounties.length} {bounties.length === 1 ? "bounty" : "bounties"} found
+          </div>
+        )}
+
+        {/* Loading skeletons */}
+        {loading && (
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filtered.map((bounty) => (
-              <BountyCard key={bounty.id} bounty={bounty} />
+            {Array.from({ length: 6 }).map((_, i) => (
+              <BountyCardSkeleton key={i} />
             ))}
           </div>
-        ) : (
-          <div className="glass rounded-xl p-16 text-center">
-            <p className="text-muted-foreground mb-2">No bounties found</p>
-            <p className="text-sm text-muted-foreground">
-              Try adjusting your filters or search terms
+        )}
+
+        {/* Grid */}
+        {!loading && !error && bounties.length > 0 && (
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 stagger-children">
+            {bounties.map((bounty) => (
+              <div key={bounty.id} className="animate-fade-in-up">
+                <BountyCard bounty={bounty} />
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Empty state */}
+        {!loading && !error && bounties.length === 0 && (
+          <div className="glass rounded-2xl p-16 text-center animate-scale-in">
+            <div className="w-16 h-16 rounded-2xl bg-surface flex items-center justify-center mx-auto mb-4">
+              <Search className="w-8 h-8 text-muted-foreground" />
+            </div>
+            <h3 className="font-mono text-lg font-bold text-foreground mb-2">No bounties found</h3>
+            <p className="text-sm text-muted-foreground max-w-md mx-auto">
+              Try adjusting your filters or search terms to find what you&apos;re looking for.
             </p>
           </div>
         )}

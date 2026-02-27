@@ -13,10 +13,12 @@ export function submissionRoutes() {
     const db = c.env.DB;
     const bountyId = c.req.query("bounty_id");
     const builderId = c.req.query("builder_id");
+    const limit = Math.min(parseInt(c.req.query("limit") || "50"), 100);
+    const offset = parseInt(c.req.query("offset") || "0");
 
     let query =
-      "SELECT s.*, u.username as builder_username, u.avatar_url as builder_avatar, b.title as bounty_title FROM submissions s LEFT JOIN users u ON s.builder_id = u.id LEFT JOIN bounties b ON s.bounty_id = b.id WHERE 1=1";
-    const params: string[] = [];
+      "SELECT s.*, u.username as builder_username, u.display_name as builder_display_name, u.avatar_url as builder_avatar_url, b.title as bounty_title FROM submissions s LEFT JOIN users u ON s.builder_id = u.id LEFT JOIN bounties b ON s.bounty_id = b.id WHERE 1=1";
+    const params: (string | number)[] = [];
 
     if (bountyId) {
       query += " AND s.bounty_id = ?";
@@ -28,7 +30,8 @@ export function submissionRoutes() {
       params.push(builderId);
     }
 
-    query += " ORDER BY s.submitted_at DESC";
+    query += " ORDER BY s.submitted_at DESC LIMIT ? OFFSET ?";
+    params.push(limit, offset);
 
     const { results } = await db.prepare(query).bind(...params).all();
 
@@ -47,7 +50,7 @@ export function submissionRoutes() {
 
     const submission = await db
       .prepare(
-        "SELECT s.*, u.username as builder_username, u.display_name as builder_display_name, u.avatar_url as builder_avatar, u.reputation as builder_reputation, b.title as bounty_title, b.budget_min, b.budget_max FROM submissions s LEFT JOIN users u ON s.builder_id = u.id LEFT JOIN bounties b ON s.bounty_id = b.id WHERE s.id = ?"
+        "SELECT s.*, u.username as builder_username, u.display_name as builder_display_name, u.avatar_url as builder_avatar_url, u.reputation as builder_reputation, u.total_earned as builder_total_earned, b.title as bounty_title, b.budget_min as bounty_budget_min, b.budget_max as bounty_budget_max FROM submissions s LEFT JOIN users u ON s.builder_id = u.id LEFT JOIN bounties b ON s.bounty_id = b.id WHERE s.id = ?"
       )
       .bind(id)
       .first();
@@ -81,6 +84,7 @@ export function submissionRoutes() {
       title?: string;
       description?: string;
       repo_url?: string;
+      preview_url?: string;
       tech_used?: string[];
     }>();
 
@@ -88,7 +92,11 @@ export function submissionRoutes() {
       return c.json({ error: "Missing bounty_id" }, 400);
     }
 
-    // Check bounty exists and is open
+    // Input validation
+    if (body.title && body.title.length > 200) return c.json({ error: "Title too long (max 200 chars)" }, 400);
+    if (body.description && body.description.length > 5000) return c.json({ error: "Description too long" }, 400);
+
+    // Check bounty exists and is open - use atomic update to prevent race condition
     const bounty = await db
       .prepare("SELECT * FROM bounties WHERE id = ?")
       .bind(body.bounty_id)
@@ -103,21 +111,31 @@ export function submissionRoutes() {
       return c.json({ error: "Bounty has reached max submissions" }, 400);
     }
 
+    // Check for duplicate submission from same builder
+    const existing = await db
+      .prepare("SELECT id FROM submissions WHERE bounty_id = ? AND builder_id = ?")
+      .bind(body.bounty_id, session.user_id)
+      .first();
+    if (existing) return c.json({ error: "You already submitted to this bounty" }, 409);
+
     const id = generateId();
-    const previewUrl = `https://vibe-bounty-api.workers.dev/preview/${id}/`;
+
+    // Use the request URL to construct preview URL
+    const origin = new URL(c.req.url).origin;
+    const previewUrl = body.preview_url || `${origin}/preview/${id}/`;
 
     await db.batch([
       db
         .prepare(
           `INSERT INTO submissions (id, bounty_id, builder_id, title, description, repo_url, tech_used, preview_url, status)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'live')`
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending')`
         )
         .bind(
           id,
           body.bounty_id,
           session.user_id,
-          body.title || null,
-          body.description || null,
+          body.title?.trim() || null,
+          body.description?.trim() || null,
           body.repo_url || null,
           body.tech_used ? JSON.stringify(body.tech_used) : null,
           previewUrl
@@ -160,11 +178,12 @@ export function submissionRoutes() {
       return c.json({ error: "Forbidden" }, 403);
 
     const body = await c.req.json<Record<string, unknown>>();
+    const allowedFields = new Set(["title", "description", "repo_url", "preview_url"]);
     const updates: string[] = [];
     const values: unknown[] = [];
 
     for (const [key, value] of Object.entries(body)) {
-      if (["title", "description", "repo_url", "status"].includes(key)) {
+      if (allowedFields.has(key)) {
         updates.push(`${key} = ?`);
         values.push(value);
       } else if (key === "tech_used") {
@@ -208,7 +227,7 @@ export function submissionRoutes() {
       feedback?: string;
     }>();
 
-    if (score < 1 || score > 10)
+    if (typeof score !== "number" || score < 1 || score > 10)
       return c.json({ error: "Score must be between 1 and 10" }, 400);
 
     // Verify poster owns the bounty
@@ -227,7 +246,7 @@ export function submissionRoutes() {
       .prepare(
         "UPDATE submissions SET score = ?, feedback = ?, reviewed_at = datetime('now') WHERE id = ?"
       )
-      .bind(score, feedback || null, id)
+      .bind(score, feedback?.trim() || null, id)
       .run();
 
     return c.json({ success: true });

@@ -23,7 +23,15 @@ const app = new Hono<{ Bindings: Env }>();
 app.use(
   "*",
   cors({
-    origin: ["http://localhost:3000", "https://vibe-bounty.pages.dev"],
+    origin: (origin) => {
+      if (!origin) return "https://vibe-bounty.pages.dev";
+      if (
+        origin === "http://localhost:3000" ||
+        origin === "https://vibe-bounty.pages.dev" ||
+        origin.endsWith(".vibe-bounty.pages.dev")
+      ) return origin;
+      return "https://vibe-bounty.pages.dev";
+    },
     allowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowHeaders: ["Content-Type", "Authorization"],
     credentials: true,
@@ -93,7 +101,7 @@ app.notFound((c) => c.json({ error: "Not found" }, 404));
 
 // Error handler
 app.onError((err, c) => {
-  console.error("API Error:", err);
+  console.error("API Error:", err.message, err.stack);
   return c.json({ error: "Internal server error" }, 500);
 });
 

@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   ArrowLeft,
@@ -14,11 +15,19 @@ import {
   FileText,
   Sparkles,
   Send,
+  Loader2,
 } from "lucide-react";
 import { cn, CATEGORIES, DIFFICULTIES, formatCurrency } from "@/lib/utils";
 import { CategoryBadge, DifficultyBadge } from "@/components/badges";
+import { useAuth } from "@/lib/auth-context";
+import { useToast } from "@/components/toast";
+import { api } from "@/lib/api";
 
 export default function NewBountyPage() {
+  const router = useRouter();
+  const { user, loading: authLoading } = useAuth();
+  const { toast } = useToast();
+  const [submitting, setSubmitting] = useState(false);
   const [form, setForm] = useState({
     title: "",
     brief: "",
@@ -33,17 +42,45 @@ export default function NewBountyPage() {
     maxSubmissions: "10",
   });
 
+  useEffect(() => {
+    if (!authLoading && !user) router.push("/login");
+  }, [authLoading, user, router]);
+
   const updateField = (field: string, value: string | boolean) =>
     setForm((prev) => ({ ...prev, [field]: value }));
 
-  const parsedTags = form.tags
-    .split(",")
-    .map((t) => t.trim())
-    .filter(Boolean);
-  const parsedTech = form.techStack
-    .split(",")
-    .map((t) => t.trim())
-    .filter(Boolean);
+  const parsedTags = form.tags.split(",").map((t) => t.trim()).filter(Boolean);
+  const parsedTech = form.techStack.split(",").map((t) => t.trim()).filter(Boolean);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!form.title || !form.brief || !form.budgetMin || !form.budgetMax || !form.category || !form.difficulty) {
+      toast("Please fill in all required fields", "error");
+      return;
+    }
+    setSubmitting(true);
+    try {
+      const bounty = await api.bounties.create({
+        title: form.title,
+        brief: form.brief,
+        budget_min: Number(form.budgetMin),
+        budget_max: Number(form.budgetMax),
+        deadline: form.deadline ? new Date(form.deadline).toISOString() : undefined,
+        category: form.category,
+        difficulty: form.difficulty,
+        tags: parsedTags,
+        tech_stack: parsedTech,
+        visibility: form.visibility ? "public" : "invite_only",
+        max_submissions: Number(form.maxSubmissions) || 10,
+      });
+      toast("Bounty published!", "success");
+      router.push(`/bounties/${bounty.id}`);
+    } catch (err: any) {
+      toast(err.message || "Failed to create bounty", "error");
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   return (
     <div className="min-h-screen">
@@ -74,7 +111,7 @@ export default function NewBountyPage() {
           {/* Form */}
           <div className="lg:col-span-3">
             <form
-              onSubmit={(e) => e.preventDefault()}
+              onSubmit={handleSubmit}
               className="space-y-6"
             >
               {/* Title */}
@@ -291,10 +328,11 @@ export default function NewBountyPage() {
               {/* Submit */}
               <button
                 type="submit"
-                className="w-full py-4 bg-accent hover:bg-accent-hover text-white font-semibold rounded-xl transition-all duration-200 hover:scale-[1.01] active:scale-[0.99] glow-accent font-mono flex items-center justify-center gap-2 text-lg"
+                disabled={submitting}
+                className="w-full py-4 bg-accent hover:bg-accent-hover text-white font-semibold rounded-xl transition-all duration-200 hover:scale-[1.01] active:scale-[0.99] glow-accent font-mono flex items-center justify-center gap-2 text-lg disabled:opacity-50"
               >
-                <Send className="w-5 h-5" />
-                Publish Bounty
+                {submitting ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
+                {submitting ? "Publishing..." : "Publish Bounty"}
               </button>
             </form>
           </div>

@@ -5,6 +5,9 @@ function generateId() {
   return crypto.randomUUID().replace(/-/g, "").slice(0, 16);
 }
 
+const VALID_CATEGORIES = ["landing-page", "web-app", "mobile-app", "api", "cli-tool", "game", "chrome-ext", "other"];
+const VALID_DIFFICULTIES = ["beginner", "intermediate", "advanced", "expert"];
+
 export function bountyRoutes() {
   const router = new Hono<{ Bindings: Env }>();
 
@@ -63,7 +66,6 @@ export function bountyRoutes() {
     const stmt = db.prepare(query);
     const { results } = await stmt.bind(...params).all();
 
-    // Parse JSON fields
     const bounties = results.map((b: Record<string, unknown>) => ({
       ...b,
       tags: b.tags ? JSON.parse(b.tags as string) : [],
@@ -125,6 +127,23 @@ export function bountyRoutes() {
       return c.json({ error: "Missing required fields" }, 400);
     }
 
+    // Input validation
+    if (body.title.length > 200) return c.json({ error: "Title too long (max 200 chars)" }, 400);
+    if (body.brief.length > 2000) return c.json({ error: "Brief too long (max 2000 chars)" }, 400);
+    if (body.budget_min < 0) return c.json({ error: "Budget minimum must be positive" }, 400);
+    if (body.budget_max < body.budget_min) return c.json({ error: "Budget max must be >= budget min" }, 400);
+    if (body.budget_max > 1000000) return c.json({ error: "Budget max exceeds limit" }, 400);
+    if (body.category && !VALID_CATEGORIES.includes(body.category)) {
+      return c.json({ error: "Invalid category" }, 400);
+    }
+    if (body.difficulty && !VALID_DIFFICULTIES.includes(body.difficulty)) {
+      return c.json({ error: "Invalid difficulty" }, 400);
+    }
+    if (body.deadline) {
+      const deadline = new Date(body.deadline);
+      if (isNaN(deadline.getTime())) return c.json({ error: "Invalid deadline format" }, 400);
+    }
+
     const id = generateId();
 
     await db
@@ -135,9 +154,9 @@ export function bountyRoutes() {
       .bind(
         id,
         session.user_id,
-        body.title,
-        body.brief,
-        body.detailed_spec || null,
+        body.title.trim(),
+        body.brief.trim(),
+        body.detailed_spec?.trim() || null,
         body.budget_min,
         body.budget_max,
         body.deadline || null,
@@ -173,14 +192,16 @@ export function bountyRoutes() {
 
     const body = await c.req.json<Record<string, unknown>>();
 
+    const allowedFields = new Set(["title", "brief", "detailed_spec", "budget_min", "budget_max", "deadline", "category", "difficulty", "max_submissions", "visibility", "status"]);
+    const jsonFields = new Set(["tags", "tech_stack"]);
     const updates: string[] = [];
     const values: unknown[] = [];
 
     for (const [key, value] of Object.entries(body)) {
-      if (["title", "brief", "detailed_spec", "budget_min", "budget_max", "deadline", "category", "difficulty", "max_submissions", "visibility", "status"].includes(key)) {
+      if (allowedFields.has(key)) {
         updates.push(`${key} = ?`);
         values.push(value);
-      } else if (key === "tags" || key === "tech_stack") {
+      } else if (jsonFields.has(key)) {
         updates.push(`${key} = ?`);
         values.push(JSON.stringify(value));
       }
@@ -216,6 +237,7 @@ export function bountyRoutes() {
     const bounty = await db.prepare("SELECT * FROM bounties WHERE id = ?").bind(id).first();
     if (!bounty) return c.json({ error: "Bounty not found" }, 404);
     if (bounty.poster_id !== session.user_id) return c.json({ error: "Forbidden" }, 403);
+    if (bounty.status === "awarded") return c.json({ error: "Cannot cancel an awarded bounty" }, 400);
 
     await db
       .prepare("UPDATE bounties SET status = 'cancelled', updated_at = datetime('now') WHERE id = ?")
@@ -238,14 +260,17 @@ export function bountyRoutes() {
     if (!session) return c.json({ error: "Session expired" }, 401);
 
     const bountyId = c.req.param("id");
-    const { submission_id, amount } = await c.req.json<{
+    const { submission_id } = await c.req.json<{
       submission_id: string;
-      amount: number;
     }>();
+
+    if (!submission_id) return c.json({ error: "Missing submission_id" }, 400);
 
     const bounty = await db.prepare("SELECT * FROM bounties WHERE id = ?").bind(bountyId).first();
     if (!bounty) return c.json({ error: "Bounty not found" }, 404);
     if (bounty.poster_id !== session.user_id) return c.json({ error: "Forbidden" }, 403);
+    if (bounty.status === "awarded") return c.json({ error: "Bounty already awarded" }, 400);
+    if (bounty.status === "cancelled") return c.json({ error: "Cannot award a cancelled bounty" }, 400);
 
     const submission = await db
       .prepare("SELECT * FROM submissions WHERE id = ? AND bounty_id = ?")
@@ -253,25 +278,27 @@ export function bountyRoutes() {
       .first();
     if (!submission) return c.json({ error: "Submission not found" }, 404);
 
-    // Award the bounty
+    const awardAmount = bounty.budget_max as number;
+
+    // Award the bounty using batch for atomicity
     await db.batch([
       db
         .prepare(
           "UPDATE bounties SET status = 'awarded', winner_id = ?, awarded_amount = ?, updated_at = datetime('now') WHERE id = ?"
         )
-        .bind(submission_id, amount, bountyId),
+        .bind(submission_id, awardAmount, bountyId),
       db
         .prepare("UPDATE submissions SET status = 'winner', reviewed_at = datetime('now') WHERE id = ?")
         .bind(submission_id),
       db
         .prepare("UPDATE users SET total_earned = total_earned + ?, reputation = reputation + 100 WHERE id = ?")
-        .bind(amount, submission.builder_id),
+        .bind(awardAmount, submission.builder_id),
       db
         .prepare("UPDATE users SET total_posted = total_posted + ? WHERE id = ?")
-        .bind(amount, session.user_id),
+        .bind(awardAmount, session.user_id),
     ]);
 
-    return c.json({ success: true });
+    return c.json({ success: true, awarded_amount: awardAmount });
   });
 
   return router;

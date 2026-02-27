@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import {
   Settings,
   User,
@@ -23,30 +24,46 @@ import {
   Megaphone,
   Sparkles,
   Star,
+  Loader2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { mockUsers } from "@/lib/mock-data";
-
-const currentUser = mockUsers[0];
+import { useAuth } from "@/lib/auth-context";
+import { useToast } from "@/components/toast";
+import { api } from "@/lib/api";
 
 type Role = "poster" | "builder" | "both";
 
 export default function SettingsPage() {
-  const [displayName, setDisplayName] = useState(
-    currentUser.display_name || ""
-  );
-  const [username, setUsername] = useState(currentUser.username);
-  const [email, setEmail] = useState(currentUser.email || "ghost@vibe.dev");
-  const [bio, setBio] = useState(currentUser.bio || "");
-  const [githubUrl, setGithubUrl] = useState(currentUser.github_url || "");
-  const [portfolioUrl, setPortfolioUrl] = useState(
-    currentUser.portfolio_url || ""
-  );
-  const [avatarUrl, setAvatarUrl] = useState(currentUser.avatar_url || "");
-  const [role, setRole] = useState<Role>(currentUser.role as Role);
+  const router = useRouter();
+  const { user: currentUser, loading: authLoading, refreshUser } = useAuth();
+  const { toast } = useToast();
+  const [displayName, setDisplayName] = useState("");
+  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
+  const [bio, setBio] = useState("");
+  const [githubUrl, setGithubUrl] = useState("");
+  const [portfolioUrl, setPortfolioUrl] = useState("");
+  const [avatarUrl, setAvatarUrl] = useState("");
+  const [role, setRole] = useState<Role>("builder");
   const [saved, setSaved] = useState(false);
+  const [saving, setSaving] = useState(false);
 
-  // Notification preferences
+  useEffect(() => {
+    if (!authLoading && !currentUser) {
+      router.push("/login");
+    }
+    if (currentUser) {
+      setDisplayName(currentUser.display_name || "");
+      setUsername(currentUser.username || "");
+      setEmail(currentUser.email || "");
+      setBio(currentUser.bio || "");
+      setGithubUrl(currentUser.github_url || "");
+      setPortfolioUrl(currentUser.portfolio_url || "");
+      setAvatarUrl(currentUser.avatar_url || "");
+      setRole((currentUser.role as Role) || "builder");
+    }
+  }, [currentUser, authLoading, router]);
+
   const [notifBountyUpdates, setNotifBountyUpdates] = useState(true);
   const [notifSubmissionReviews, setNotifSubmissionReviews] = useState(true);
   const [notifNewComments, setNotifNewComments] = useState(true);
@@ -54,10 +71,36 @@ export default function SettingsPage() {
   const [notifWeeklyDigest, setNotifWeeklyDigest] = useState(true);
   const [notifMarketingEmails, setNotifMarketingEmails] = useState(false);
 
-  const handleSave = () => {
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      await api.users.updateMe({
+        display_name: displayName,
+        bio,
+        github_url: githubUrl,
+        portfolio_url: portfolioUrl,
+        role,
+      });
+      await refreshUser();
+      setSaved(true);
+      toast("Settings saved!", "success");
+      setTimeout(() => setSaved(false), 2000);
+    } catch (err: any) {
+      toast(err.message || "Failed to save settings", "error");
+    } finally {
+      setSaving(false);
+    }
   };
+
+  if (authLoading) {
+    return (
+      <div className="flex justify-center py-32">
+        <Loader2 className="w-8 h-8 animate-spin text-accent" />
+      </div>
+    );
+  }
+
+  if (!currentUser) return null;
 
   return (
     <div className="px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
@@ -449,10 +492,11 @@ export default function SettingsPage() {
             )}
             <button
               onClick={handleSave}
-              className="flex items-center gap-2 rounded-lg bg-accent px-8 py-3 text-sm font-semibold text-white hover:bg-accent-hover transition-colors shadow-lg shadow-accent/25"
+              disabled={saving}
+              className="flex items-center gap-2 rounded-lg bg-accent px-8 py-3 text-sm font-semibold text-white hover:bg-accent-hover transition-colors shadow-lg shadow-accent/25 disabled:opacity-50"
             >
-              <Save className="h-4 w-4" />
-              Save Changes
+              {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+              {saving ? "Saving..." : "Save Changes"}
             </button>
           </div>
 

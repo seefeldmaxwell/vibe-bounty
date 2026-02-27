@@ -24,6 +24,12 @@ async function createSession(db: D1Database, userId: string): Promise<string> {
   return sessionId;
 }
 
+function stripSensitive(user: any) {
+  if (!user) return user;
+  const { password_hash, ...safe } = user;
+  return safe;
+}
+
 export function authRoutes() {
   const router = new Hono<{ Bindings: Env }>();
 
@@ -87,7 +93,7 @@ export function authRoutes() {
 
     const sessionToken = await createSession(db, user!.id as string);
 
-    return c.json({ user, token: sessionToken });
+    return c.json({ user: stripSensitive(user), token: sessionToken });
   });
 
   // Email signup
@@ -129,7 +135,7 @@ export function authRoutes() {
     const user = await db.prepare("SELECT * FROM users WHERE id = ?").bind(id).first();
     const sessionToken = await createSession(db, id);
 
-    return c.json({ user, token: sessionToken }, 201);
+    return c.json({ user: stripSensitive(user), token: sessionToken }, 201);
   });
 
   // Email login
@@ -156,7 +162,7 @@ export function authRoutes() {
     }
 
     const sessionToken = await createSession(db, user.id as string);
-    return c.json({ user, token: sessionToken });
+    return c.json({ user: stripSensitive(user), token: sessionToken });
   });
 
   // Get current user
@@ -177,7 +183,7 @@ export function authRoutes() {
       .bind(session.user_id)
       .first();
 
-    return c.json(user);
+    return c.json(stripSensitive(user));
   });
 
   return router;

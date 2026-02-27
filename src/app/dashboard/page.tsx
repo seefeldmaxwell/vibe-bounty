@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   LayoutDashboard,
@@ -19,51 +20,217 @@ import {
   Target,
   TrendingUp,
 } from "lucide-react";
-import { mockUsers, mockBounties, mockSubmissions } from "@/lib/mock-data";
+import { api } from "@/lib/api";
+import { useAuth } from "@/lib/auth-context";
+import { useToast } from "@/components/toast";
 import { cn, formatCurrency, timeAgo, timeRemaining } from "@/lib/utils";
 import {
   StatusBadge,
   SubmissionStatusBadge,
   CategoryBadge,
 } from "@/components/badges";
+import type { User, Bounty, Submission } from "@/lib/types";
 
 type ViewTab = "poster" | "builder";
 
-const currentBuilder = mockUsers[0]; // ghost_coder
-const currentPoster = mockUsers[1]; // vibe_queen
+function parseTags(value: unknown): string[] {
+  if (Array.isArray(value)) return value;
+  if (typeof value === "string") {
+    try {
+      const parsed = JSON.parse(value);
+      if (Array.isArray(parsed)) return parsed;
+    } catch {
+      // not valid JSON
+    }
+  }
+  return [];
+}
+
+/* ===================== LOADING SKELETON ===================== */
+
+function DashboardSkeleton() {
+  return (
+    <div className="px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
+      <div className="mx-auto max-w-7xl">
+        {/* Header skeleton */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
+          <div>
+            <div className="h-9 w-56 rounded-lg bg-white/5 animate-pulse mb-2" />
+            <div className="h-4 w-40 rounded bg-white/5 animate-pulse" />
+          </div>
+          <div className="h-11 w-64 rounded-xl bg-white/5 animate-pulse" />
+        </div>
+
+        {/* Stats skeleton */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="glass rounded-xl p-6">
+              <div className="flex items-center justify-between mb-4">
+                <div className="h-10 w-10 rounded-lg bg-white/5 animate-pulse" />
+                <div className="h-4 w-4 rounded bg-white/5 animate-pulse" />
+              </div>
+              <div className="h-9 w-20 rounded bg-white/5 animate-pulse mb-1" />
+              <div className="h-4 w-32 rounded bg-white/5 animate-pulse" />
+            </div>
+          ))}
+        </div>
+
+        {/* Reputation bar skeleton */}
+        <div className="glass rounded-xl p-6 mb-8">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-full bg-white/5 animate-pulse" />
+              <div>
+                <div className="h-4 w-24 rounded bg-white/5 animate-pulse mb-1" />
+                <div className="h-3 w-16 rounded bg-white/5 animate-pulse" />
+              </div>
+            </div>
+            <div className="h-8 w-16 rounded bg-white/5 animate-pulse" />
+          </div>
+          <div className="w-full h-2 rounded-full bg-white/5 animate-pulse" />
+        </div>
+
+        {/* Content skeleton */}
+        <div className="space-y-4">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="glass rounded-xl p-4">
+              <div className="h-5 w-3/4 rounded bg-white/5 animate-pulse mb-2" />
+              <div className="h-3 w-1/2 rounded bg-white/5 animate-pulse" />
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ===================== MAIN PAGE ===================== */
 
 export default function DashboardPage() {
-  const [activeTab, setActiveTab] = useState<ViewTab>("builder");
+  const router = useRouter();
+  const { user, loading: authLoading } = useAuth();
+  const { toast } = useToast();
 
-  // Poster data
-  const posterBounties = useMemo(
-    () => mockBounties.filter((b) => b.poster_id === currentPoster.id),
-    []
+  // Determine default tab from user role
+  const defaultTab: ViewTab = useMemo(() => {
+    if (!user) return "builder";
+    if (user.role === "poster") return "poster";
+    return "builder"; // "builder", "both", or "admin" default to builder
+  }, [user]);
+
+  const [activeTab, setActiveTab] = useState<ViewTab>(defaultTab);
+
+  // Sync activeTab when user loads
+  useEffect(() => {
+    if (user) {
+      if (user.role === "poster") setActiveTab("poster");
+      else setActiveTab("builder");
+    }
+  }, [user]);
+
+  // Data state
+  const [bounties, setBounties] = useState<Bounty[]>([]);
+  const [submissions, setSubmissions] = useState<Submission[]>([]);
+  const [dataLoading, setDataLoading] = useState(true);
+
+  // Redirect if not logged in
+  useEffect(() => {
+    if (!authLoading && !user) {
+      router.push("/login");
+    }
+  }, [authLoading, user, router]);
+
+  // Fetch data based on user role
+  const fetchData = useCallback(async () => {
+    if (!user) return;
+    setDataLoading(true);
+    try {
+      const showBuilder =
+        user.role === "builder" || user.role === "both" || user.role === "admin";
+      const showPoster =
+        user.role === "poster" || user.role === "both" || user.role === "admin";
+
+      const promises: Promise<any>[] = [];
+
+      if (showBuilder) {
+        // Builder needs: their submissions + all bounties (to cross-reference)
+        promises.push(
+          api.submissions.list({ builder_id: user.id }),
+          api.bounties.list()
+        );
+      } else {
+        promises.push(Promise.resolve([]), Promise.resolve([]));
+      }
+
+      if (showPoster) {
+        // Poster needs: their bounties + all submissions (to find reviews)
+        promises.push(
+          api.bounties.list({ poster_id: user.id }),
+          api.submissions.list()
+        );
+      } else {
+        promises.push(Promise.resolve([]), Promise.resolve([]));
+      }
+
+      const [builderSubs, allBounties, posterBounties, allSubs] =
+        await Promise.all(promises);
+
+      // Merge bounties: use poster bounties if poster-only, otherwise all bounties
+      if (showBuilder && showPoster) {
+        setBounties(allBounties || []);
+        setSubmissions(allSubs || []);
+      } else if (showBuilder) {
+        setBounties(allBounties || []);
+        setSubmissions(builderSubs || []);
+      } else {
+        setBounties(posterBounties || []);
+        setSubmissions(allSubs || []);
+      }
+    } catch (err: any) {
+      toast(err.message || "Failed to load dashboard data", "error");
+    } finally {
+      setDataLoading(false);
+    }
+  }, [user, toast]);
+
+  useEffect(() => {
+    if (user) fetchData();
+  }, [user, fetchData]);
+
+  // Show loading while auth or data is loading
+  if (authLoading || !user || dataLoading) {
+    return <DashboardSkeleton />;
+  }
+
+  // Determine which tabs to show
+  const showBuilderTab =
+    user.role === "builder" || user.role === "both" || user.role === "admin";
+  const showPosterTab =
+    user.role === "poster" || user.role === "both" || user.role === "admin";
+
+  // Builder computed data
+  const builderSubmissions = submissions.filter(
+    (s) => s.builder_id === user.id
   );
+  const builderWins = builderSubmissions.filter((s) => s.status === "winner");
+  const builderActiveBounties = (() => {
+    const bountyIds = new Set(builderSubmissions.map((s) => s.bounty_id));
+    return bounties.filter((b) => bountyIds.has(b.id));
+  })();
+
+  // Poster computed data
+  const posterBounties = bounties.filter((b) => b.poster_id === user.id);
   const posterOpenBounties = posterBounties.filter((b) => b.status === "open");
   const posterInReview = posterBounties.filter(
     (b) => b.status === "in_review"
   );
   const posterAwarded = posterBounties.filter((b) => b.status === "awarded");
-  const posterTotalSpent = currentPoster.total_posted;
-  const posterSubmissionsToReview = mockSubmissions.filter(
+  const posterTotalSpent = user.total_posted;
+  const posterSubmissionsToReview = submissions.filter(
     (s) =>
       posterBounties.some((b) => b.id === s.bounty_id) &&
       (s.status === "live" || s.status === "pending")
   );
-
-  // Builder data
-  const builderSubmissions = useMemo(
-    () => mockSubmissions.filter((s) => s.builder_id === currentBuilder.id),
-    []
-  );
-  const builderWins = builderSubmissions.filter(
-    (s) => s.status === "winner"
-  );
-  const builderActiveBounties = useMemo(() => {
-    const bountyIds = new Set(builderSubmissions.map((s) => s.bounty_id));
-    return mockBounties.filter((b) => bountyIds.has(b.id));
-  }, [builderSubmissions]);
 
   return (
     <div className="px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
@@ -78,40 +245,54 @@ export default function DashboardPage() {
             <p className="text-muted-foreground text-sm">
               Welcome back,{" "}
               <span className="text-foreground font-mono font-medium">
-                {activeTab === "builder"
-                  ? currentBuilder.display_name
-                  : currentPoster.display_name}
+                {user.display_name || user.username}
               </span>
             </p>
           </div>
 
           {/* Tab Switcher */}
-          <div className="glass rounded-xl p-1 flex gap-1">
-            <button
-              onClick={() => setActiveTab("builder")}
-              className={cn(
-                "flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-mono font-medium transition-all",
-                activeTab === "builder"
-                  ? "bg-accent text-white shadow-lg shadow-accent/25"
-                  : "text-muted-foreground hover:text-foreground"
-              )}
-            >
-              <Hammer className="h-4 w-4" />
-              Builder View
-            </button>
-            <button
-              onClick={() => setActiveTab("poster")}
-              className={cn(
-                "flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-mono font-medium transition-all",
-                activeTab === "poster"
-                  ? "bg-accent text-white shadow-lg shadow-accent/25"
-                  : "text-muted-foreground hover:text-foreground"
-              )}
-            >
-              <Megaphone className="h-4 w-4" />
-              Poster View
-            </button>
-          </div>
+          {showBuilderTab && showPosterTab ? (
+            <div className="glass rounded-xl p-1 flex gap-1">
+              <button
+                onClick={() => setActiveTab("builder")}
+                className={cn(
+                  "flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-mono font-medium transition-all",
+                  activeTab === "builder"
+                    ? "bg-accent text-white shadow-lg shadow-accent/25"
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                <Hammer className="h-4 w-4" />
+                Builder View
+              </button>
+              <button
+                onClick={() => setActiveTab("poster")}
+                className={cn(
+                  "flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-mono font-medium transition-all",
+                  activeTab === "poster"
+                    ? "bg-accent text-white shadow-lg shadow-accent/25"
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                <Megaphone className="h-4 w-4" />
+                Poster View
+              </button>
+            </div>
+          ) : showBuilderTab ? (
+            <div className="glass rounded-xl p-1 flex gap-1">
+              <div className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-mono font-medium bg-accent text-white shadow-lg shadow-accent/25">
+                <Hammer className="h-4 w-4" />
+                Builder View
+              </div>
+            </div>
+          ) : (
+            <div className="glass rounded-xl p-1 flex gap-1">
+              <div className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-mono font-medium bg-accent text-white shadow-lg shadow-accent/25">
+                <Megaphone className="h-4 w-4" />
+                Poster View
+              </div>
+            </div>
+          )}
         </div>
 
         {activeTab === "builder" ? (
@@ -119,7 +300,7 @@ export default function DashboardPage() {
             submissions={builderSubmissions}
             wins={builderWins}
             activeBounties={builderActiveBounties}
-            user={currentBuilder}
+            user={user}
           />
         ) : (
           <PosterView
@@ -129,7 +310,7 @@ export default function DashboardPage() {
             awardedBounties={posterAwarded}
             totalSpent={posterTotalSpent}
             submissionsToReview={posterSubmissionsToReview}
-            user={currentPoster}
+            user={user}
           />
         )}
       </div>
@@ -145,10 +326,10 @@ function BuilderView({
   activeBounties,
   user,
 }: {
-  submissions: typeof mockSubmissions;
-  wins: typeof mockSubmissions;
-  activeBounties: typeof mockBounties;
-  user: typeof mockUsers[0];
+  submissions: Submission[];
+  wins: Submission[];
+  activeBounties: Bounty[];
+  user: User;
 }) {
   return (
     <div className="space-y-8">
@@ -199,13 +380,16 @@ function BuilderView({
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-3">
             <img
-              src={user.avatar_url}
+              src={
+                user.avatar_url ||
+                `https://api.dicebear.com/9.x/bottts-neutral/svg?seed=${user.username}`
+              }
               alt={user.username}
               className="h-10 w-10 rounded-full ring-2 ring-accent/30"
             />
             <div>
               <span className="font-mono text-sm font-semibold">
-                {user.display_name}
+                {user.display_name || user.username}
               </span>
               <p className="text-xs text-muted-foreground">
                 @{user.username}
@@ -263,7 +447,7 @@ function BuilderView({
                     </p>
                   </div>
                   <div className="flex items-center gap-4 flex-shrink-0">
-                    {sub.score !== undefined && (
+                    {sub.score !== undefined && sub.score !== null && (
                       <div className="flex items-center gap-1 text-sm">
                         <Star className="h-3.5 w-3.5 text-yellow-400 fill-yellow-400" />
                         <span className="font-mono font-medium text-yellow-400">
@@ -310,38 +494,53 @@ function BuilderView({
             <ArrowUpRight className="h-3 w-3" />
           </Link>
         </div>
-        <div className="grid sm:grid-cols-2 gap-4">
-          {activeBounties.map((bounty) => (
-            <Link
-              key={bounty.id}
-              href={`/bounties/${bounty.id}`}
-              className="glass glass-hover rounded-xl p-5 transition-all group"
-            >
-              <div className="flex items-start justify-between gap-3 mb-3">
-                <div className="flex items-center gap-2">
-                  <CategoryBadge category={bounty.category} />
-                  <StatusBadge status={bounty.status} />
+        {activeBounties.length > 0 ? (
+          <div className="grid sm:grid-cols-2 gap-4">
+            {activeBounties.map((bounty) => (
+              <Link
+                key={bounty.id}
+                href={`/bounties/${bounty.id}`}
+                className="glass glass-hover rounded-xl p-5 transition-all group"
+              >
+                <div className="flex items-start justify-between gap-3 mb-3">
+                  <div className="flex items-center gap-2">
+                    <CategoryBadge category={bounty.category} />
+                    <StatusBadge status={bounty.status} />
+                  </div>
+                  <ArrowUpRight className="h-4 w-4 text-muted-foreground group-hover:text-accent transition-colors flex-shrink-0" />
                 </div>
-                <ArrowUpRight className="h-4 w-4 text-muted-foreground group-hover:text-accent transition-colors flex-shrink-0" />
-              </div>
-              <h3 className="font-mono text-sm font-semibold mb-2 group-hover:text-accent transition-colors">
-                {bounty.title}
-              </h3>
-              <div className="flex items-center justify-between text-xs text-muted-foreground">
-                <span className="font-mono text-neon font-medium">
-                  {formatCurrency(bounty.budget_min)} &mdash;{" "}
-                  {formatCurrency(bounty.budget_max)}
-                </span>
-                {bounty.deadline && (
-                  <span className="flex items-center gap-1">
-                    <Clock className="h-3 w-3" />
-                    {timeRemaining(bounty.deadline)}
+                <h3 className="font-mono text-sm font-semibold mb-2 group-hover:text-accent transition-colors">
+                  {bounty.title}
+                </h3>
+                <div className="flex items-center justify-between text-xs text-muted-foreground">
+                  <span className="font-mono text-neon font-medium">
+                    {formatCurrency(bounty.budget_min)} &mdash;{" "}
+                    {formatCurrency(bounty.budget_max)}
                   </span>
-                )}
-              </div>
+                  {bounty.deadline && (
+                    <span className="flex items-center gap-1">
+                      <Clock className="h-3 w-3" />
+                      {timeRemaining(bounty.deadline)}
+                    </span>
+                  )}
+                </div>
+              </Link>
+            ))}
+          </div>
+        ) : (
+          <div className="glass rounded-xl p-12 text-center">
+            <Target className="h-8 w-8 text-muted-foreground mx-auto mb-3" />
+            <p className="text-muted-foreground text-sm">
+              No active bounties yet
+            </p>
+            <Link
+              href="/bounties"
+              className="text-accent text-sm font-mono hover:underline mt-1 inline-block"
+            >
+              Find a bounty to work on
             </Link>
-          ))}
-        </div>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -358,13 +557,13 @@ function PosterView({
   submissionsToReview,
   user,
 }: {
-  bounties: typeof mockBounties;
-  openBounties: typeof mockBounties;
-  inReviewBounties: typeof mockBounties;
-  awardedBounties: typeof mockBounties;
+  bounties: Bounty[];
+  openBounties: Bounty[];
+  inReviewBounties: Bounty[];
+  awardedBounties: Bounty[];
   totalSpent: number;
-  submissionsToReview: typeof mockSubmissions;
-  user: typeof mockUsers[0];
+  submissionsToReview: Submission[];
+  user: User;
 }) {
   return (
     <div className="space-y-8">
@@ -418,13 +617,16 @@ function PosterView({
       <div className="glass rounded-xl p-4 flex flex-col sm:flex-row items-center gap-4">
         <div className="flex items-center gap-3 flex-1">
           <img
-            src={user.avatar_url}
+            src={
+              user.avatar_url ||
+              `https://api.dicebear.com/9.x/bottts-neutral/svg?seed=${user.username}`
+            }
             alt={user.username}
             className="h-10 w-10 rounded-full ring-2 ring-accent/30"
           />
           <div>
             <span className="font-mono text-sm font-semibold">
-              {user.display_name}
+              {user.display_name || user.username}
             </span>
             <p className="text-xs text-muted-foreground">
               {bounties.length} bounties &middot;{" "}
@@ -514,7 +716,10 @@ function PosterView({
               >
                 {sub.builder && (
                   <img
-                    src={sub.builder.avatar_url}
+                    src={
+                      sub.builder.avatar_url ||
+                      `https://api.dicebear.com/9.x/bottts-neutral/svg?seed=${sub.builder.username}`
+                    }
                     alt={sub.builder.username}
                     className="h-8 w-8 rounded-full ring-1 ring-white/10"
                   />
@@ -554,7 +759,7 @@ function BountySection({
   title: string;
   count: number;
   dotColor: string;
-  bounties: typeof mockBounties;
+  bounties: Bounty[];
 }) {
   return (
     <div className="mb-6">
@@ -571,9 +776,6 @@ function BountySection({
       </div>
       <div className="glass rounded-xl overflow-hidden divide-y divide-white/5">
         {bounties.map((bounty) => {
-          const subs = mockSubmissions.filter(
-            (s) => s.bounty_id === bounty.id
-          );
           return (
             <Link
               key={bounty.id}
@@ -608,7 +810,7 @@ function BountySection({
                 </div>
                 <div className="text-right">
                   <div className="font-mono text-sm font-semibold">
-                    {subs.length}
+                    {bounty.submission_count ?? 0}
                   </div>
                   <div className="text-[10px] text-muted-foreground font-mono">
                     subs
