@@ -27,13 +27,14 @@ app.use(
   "*",
   cors({
     origin: (origin) => {
-      if (!origin) return "https://vibe-bounty.pages.dev";
+      if (!origin) return "https://vibe-bounty-web.seefeldmaxwell1.workers.dev";
       if (
         origin === "http://localhost:3000" ||
         origin === "https://vibe-bounty.pages.dev" ||
-        origin.endsWith(".vibe-bounty.pages.dev")
+        origin.endsWith(".vibe-bounty.pages.dev") ||
+        origin === "https://vibe-bounty-web.seefeldmaxwell1.workers.dev"
       ) return origin;
-      return "https://vibe-bounty.pages.dev";
+      return "https://vibe-bounty-web.seefeldmaxwell1.workers.dev";
     },
     allowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowHeaders: ["Content-Type", "Authorization"],
