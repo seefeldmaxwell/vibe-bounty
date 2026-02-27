@@ -89,14 +89,14 @@ app.get("/api/leaderboard", async (c) => {
   if (type === "builders") {
     const { results } = await db
       .prepare(
-        "SELECT id, username, display_name, avatar_url, reputation, total_earned FROM users WHERE role IN ('builder', 'both') ORDER BY reputation DESC LIMIT 50"
+        "SELECT id, username, display_name, avatar_url, reputation, total_earned, total_posted FROM users WHERE role IN ('builder', 'both') ORDER BY reputation DESC LIMIT 50"
       )
       .all();
     return c.json(results);
   } else {
     const { results } = await db
       .prepare(
-        "SELECT id, username, display_name, avatar_url, reputation, total_posted FROM users WHERE role IN ('poster', 'both') ORDER BY total_posted DESC LIMIT 50"
+        "SELECT id, username, display_name, avatar_url, reputation, total_earned, total_posted FROM users WHERE role IN ('poster', 'both') ORDER BY total_posted DESC LIMIT 50"
       )
       .all();
     return c.json(results);

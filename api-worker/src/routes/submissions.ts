@@ -121,9 +121,22 @@ export function submissionRoutes() {
 
     const id = generateId();
 
-    // Use the request URL to construct preview URL
-    const origin = new URL(c.req.url).origin;
-    const previewUrl = body.preview_url || `${origin}/preview/${id}/`;
+    // Validate and use the request URL to construct preview URL
+    let previewUrl: string | null = null;
+    if (body.preview_url) {
+      try {
+        const parsed = new URL(body.preview_url);
+        if (parsed.protocol === "https:" || parsed.protocol === "http:") {
+          previewUrl = body.preview_url;
+        }
+      } catch {
+        return c.json({ error: "Invalid preview URL" }, 400);
+      }
+    }
+    if (!previewUrl) {
+      const origin = new URL(c.req.url).origin;
+      previewUrl = `${origin}/preview/${id}/`;
+    }
 
     await db.batch([
       db

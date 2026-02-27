@@ -293,7 +293,7 @@ export function bountyRoutes() {
         .prepare(
           "UPDATE bounties SET status = 'awarded', winner_id = ?, awarded_amount = ?, updated_at = datetime('now') WHERE id = ?"
         )
-        .bind(submission_id, awardAmount, bountyId),
+        .bind(submission.builder_id as string, awardAmount, bountyId),
       db
         .prepare("UPDATE submissions SET status = 'winner', reviewed_at = datetime('now') WHERE id = ?")
         .bind(submission_id),

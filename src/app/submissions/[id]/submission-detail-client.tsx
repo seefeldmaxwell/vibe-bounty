@@ -72,7 +72,7 @@ export default function SubmissionDetailClient({ id }: { id: string }) {
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="relative aspect-video bg-black/50 rounded-2xl border border-border overflow-hidden mb-8 animate-fade-in-up">
           {submission.preview_url ? (
-            <iframe src={submission.preview_url} title={submission.title ?? "Preview"} className="w-full h-full" sandbox="allow-scripts allow-same-origin" />
+            <iframe src={submission.preview_url} title={submission.title ?? "Preview"} className="w-full h-full" sandbox="allow-scripts" />
           ) : (
             <div className="w-full h-full flex flex-col items-center justify-center gap-3">
               <div className="w-16 h-16 rounded-2xl bg-surface flex items-center justify-center"><ExternalLink className="w-8 h-8 text-muted-foreground" /></div>

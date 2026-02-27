@@ -5,24 +5,7 @@ import { stripHtml } from "../middleware/sanitize";
 export function userRoutes() {
   const router = new Hono<{ Bindings: Env }>();
 
-  // Get public profile
-  router.get("/:username", async (c) => {
-    const db = c.env.DB;
-    const username = c.req.param("username");
-
-    const user = await db
-      .prepare(
-        "SELECT id, username, display_name, avatar_url, bio, role, reputation, total_earned, total_posted, github_url, portfolio_url, created_at FROM users WHERE username = ?"
-      )
-      .bind(username)
-      .first();
-
-    if (!user) return c.json({ error: "User not found" }, 404);
-
-    return c.json(user);
-  });
-
-  // Update own profile
+  // Update own profile — must be before /:username to avoid route conflict
   router.put("/me", async (c) => {
     const token = c.req.header("Authorization")?.replace("Bearer ", "");
     if (!token) return c.json({ error: "Not authenticated" }, 401);
@@ -75,6 +58,23 @@ export function userRoutes() {
       .prepare("SELECT id, username, display_name, avatar_url, bio, role, reputation, total_earned, total_posted, github_url, portfolio_url, created_at FROM users WHERE id = ?")
       .bind(session.user_id)
       .first();
+    return c.json(user);
+  });
+
+  // Get public profile
+  router.get("/:username", async (c) => {
+    const db = c.env.DB;
+    const username = c.req.param("username");
+
+    const user = await db
+      .prepare(
+        "SELECT id, username, display_name, avatar_url, bio, role, reputation, total_earned, total_posted, github_url, portfolio_url, created_at FROM users WHERE username = ?"
+      )
+      .bind(username)
+      .first();
+
+    if (!user) return c.json({ error: "User not found" }, 404);
+
     return c.json(user);
   });
 

@@ -4,9 +4,11 @@ import { Bounty } from "@/lib/types";
 import { cn, formatCurrency, timeRemaining } from "@/lib/utils";
 import { DifficultyBadge, CategoryBadge, StatusBadge } from "./badges";
 
-export function BountyCard({ bounty }: { bounty: Bounty }) {
+export function BountyCard({ bounty }: { bounty: Bounty & { poster_username?: string; poster_avatar?: string } }) {
   const deadlineText = bounty.deadline ? timeRemaining(bounty.deadline) : null;
   const isExpired = deadlineText === "Expired";
+  const posterUsername = bounty.poster?.username || bounty.poster_username;
+  const posterAvatar = bounty.poster?.avatar_url || bounty.poster_avatar || (posterUsername ? `https://api.dicebear.com/9.x/bottts-neutral/svg?seed=${posterUsername}` : undefined);
 
   return (
     <Link href={`/bounties/${bounty.id}`} className="group block">
@@ -75,15 +77,15 @@ export function BountyCard({ bounty }: { bounty: Bounty }) {
           </div>
 
           {/* Poster avatar */}
-          {bounty.poster && (
+          {posterUsername && (
             <div className="flex items-center gap-2">
               <img
-                src={bounty.poster.avatar_url}
-                alt={bounty.poster.username}
+                src={posterAvatar}
+                alt={posterUsername}
                 className="h-5 w-5 rounded-full bg-border ring-1 ring-border group-hover:ring-accent/30 transition-all"
               />
               <span className="text-xs text-muted-foreground font-mono">
-                {bounty.poster.username}
+                {posterUsername}
               </span>
             </div>
           )}

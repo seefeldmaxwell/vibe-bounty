@@ -163,6 +163,6 @@ export const api = {
       throw new ApiError(res.status, (body as { error?: string }).error || "Upload failed");
     }
 
-    return res.json() as Promise<{ urls: string[] }>;
+    return res.json() as Promise<{ uploaded: { id: string; filename: string; size: number; r2_key: string }[]; count: number }>;
   },
 };

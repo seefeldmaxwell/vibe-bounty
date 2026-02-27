@@ -154,7 +154,7 @@ function SubmissionReviewCard({ submission, bountyId, onUpdate }: { submission: 
     <div className="glass rounded-2xl border border-border overflow-hidden animate-fade-in-up card-hover">
       <div className="relative aspect-video bg-black/50 border-b border-border">
         {submission.preview_url ? (
-          <iframe src={submission.preview_url} title={submission.title ?? "Preview"} className="w-full h-full" sandbox="allow-scripts allow-same-origin" />
+          <iframe src={submission.preview_url} title={submission.title ?? "Preview"} className="w-full h-full" sandbox="allow-scripts" />
         ) : (
           <div className="w-full h-full flex items-center justify-center">
             <p className="text-sm text-muted-foreground font-mono">No live preview available</p>
