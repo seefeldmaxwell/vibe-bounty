@@ -12,6 +12,7 @@ import {
   Calendar,
   Tag,
   MessageSquare,
+  Eye,
   Loader2,
 } from "lucide-react";
 import { api, ApiError } from "@/lib/api";
@@ -613,12 +614,24 @@ export default function BountyDetailClient({ id }: { id: string }) {
                 {formatCurrency(bounty.budget_min)} —{" "}
                 {formatCurrency(bounty.budget_max)}
               </div>
-              <Link
-                href={`/bounties/${bounty.id}/submit`}
-                className="block w-full text-center rounded-lg bg-accent px-4 py-3 text-sm font-semibold text-white hover:bg-accent-hover transition-colors"
-              >
-                Submit Solution
-              </Link>
+              {user && user.id === bounty.poster_id ? (
+                <div className="space-y-2">
+                  <Link
+                    href={`/bounties/${bounty.id}/review`}
+                    className="flex items-center justify-center gap-2 w-full rounded-lg bg-accent px-4 py-3 text-sm font-semibold text-white hover:bg-accent-hover transition-colors"
+                  >
+                    <Eye className="w-4 h-4" />
+                    Review Submissions
+                  </Link>
+                </div>
+              ) : (
+                <Link
+                  href={`/bounties/${bounty.id}/submit`}
+                  className="block w-full text-center rounded-lg bg-accent px-4 py-3 text-sm font-semibold text-white hover:bg-accent-hover transition-colors"
+                >
+                  Submit Solution
+                </Link>
+              )}
             </div>
 
             {/* Info card */}

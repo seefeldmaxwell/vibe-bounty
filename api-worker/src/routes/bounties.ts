@@ -17,6 +17,7 @@ export function bountyRoutes() {
     const status = c.req.query("status") || "open";
     const category = c.req.query("category");
     const difficulty = c.req.query("difficulty");
+    const posterId = c.req.query("poster_id");
     const sort = c.req.query("sort") || "newest";
     const search = c.req.query("search");
     const limit = Math.min(parseInt(c.req.query("limit") || "20"), 100);
@@ -24,6 +25,11 @@ export function bountyRoutes() {
 
     let query = "SELECT b.*, u.username as poster_username, u.avatar_url as poster_avatar FROM bounties b LEFT JOIN users u ON b.poster_id = u.id WHERE 1=1";
     const params: string[] = [];
+
+    if (posterId) {
+      query += " AND b.poster_id = ?";
+      params.push(posterId);
+    }
 
     if (status !== "all") {
       query += " AND b.status = ?";

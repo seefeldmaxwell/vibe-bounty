@@ -165,7 +165,7 @@ export default function DashboardPage() {
       if (showPoster) {
         // Poster needs: their bounties + all submissions (to find reviews)
         promises.push(
-          api.bounties.list({ poster_id: user.id }),
+          api.bounties.list({ poster_id: user.id, status: "all" }),
           api.submissions.list()
         );
       } else {

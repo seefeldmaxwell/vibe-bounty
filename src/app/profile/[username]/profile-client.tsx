@@ -31,7 +31,7 @@ export default function ProfileClient({ username }: { username: string }) {
       .then((u) => {
         setUser(u);
         return Promise.all([
-          api.bounties.list({ poster_id: u.id }).catch(() => []),
+          api.bounties.list({ poster_id: u.id, status: "all" }).catch(() => []),
           api.submissions.list({ builder_id: u.id }).catch(() => []),
         ]);
       })
