@@ -13,12 +13,12 @@ export async function generateMetadata({
   const { id } = await params;
   try {
     const res = await fetch(`${API_BASE}/api/bounties/${id}`, {
-      next: { revalidate: 60 },
+      headers: { Accept: "application/json" },
     });
     if (!res.ok) return { title: "Bounty — VibeBounty" };
-    const bounty = await res.json();
+    const bounty = (await res.json()) as { title?: string; brief?: string };
     return {
-      title: `${bounty.title} — VibeBounty`,
+      title: `${bounty.title || "Bounty"} — VibeBounty`,
       description: bounty.brief?.slice(0, 160),
     };
   } catch {
