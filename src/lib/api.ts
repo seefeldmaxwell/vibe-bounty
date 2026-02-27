@@ -22,7 +22,12 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
 
   if (!res.ok) {
     const body = await res.json().catch(() => ({ error: "Request failed" }));
-    throw new ApiError(res.status, (body as { error?: string }).error || "Request failed");
+    const error = new ApiError(res.status, (body as { error?: string }).error || "Request failed");
+    // Auto-clear expired token
+    if (res.status === 401 && token && typeof window !== "undefined") {
+      localStorage.removeItem("vb_token");
+    }
+    throw error;
   }
 
   return res.json() as Promise<T>;
