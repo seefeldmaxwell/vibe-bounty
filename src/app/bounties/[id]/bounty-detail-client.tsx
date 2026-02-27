@@ -525,9 +525,10 @@ export default function BountyDetailClient({ id }: { id: string }) {
                   })}
                 </div>
               ) : (
-                <p className="text-sm text-muted-foreground text-center py-6">
-                  No submissions yet. Be the first!
-                </p>
+                <div className="text-center py-8">
+                  <Send className="h-6 w-6 text-muted-foreground/40 mx-auto mb-2" />
+                  <p className="text-sm text-muted-foreground">No submissions yet. Be the first!</p>
+                </div>
               )}
             </div>
 
@@ -580,9 +581,10 @@ export default function BountyDetailClient({ id }: { id: string }) {
                   })}
                 </div>
               ) : (
-                <p className="text-sm text-muted-foreground text-center py-4">
-                  No comments yet.
-                </p>
+                <div className="text-center py-6">
+                  <MessageSquare className="h-6 w-6 text-muted-foreground/40 mx-auto mb-2" />
+                  <p className="text-sm text-muted-foreground">No comments yet. Start the conversation!</p>
+                </div>
               )}
 
               {/* Comment input */}

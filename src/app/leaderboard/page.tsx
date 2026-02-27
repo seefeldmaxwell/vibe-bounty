@@ -83,8 +83,19 @@ export default function LeaderboardPage() {
         </div>
 
         {loading ? (
-          <div className="flex justify-center py-20">
-            <Loader2 className="w-8 h-8 animate-spin text-accent" />
+          <div className="space-y-3">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div key={i} className="glass rounded-xl px-4 py-5 flex items-center gap-4 animate-pulse">
+                <div className="h-6 w-6 rounded bg-white/10" />
+                <div className="h-10 w-10 rounded-full bg-white/10 shrink-0" />
+                <div className="flex-1 space-y-2">
+                  <div className="h-4 w-32 rounded bg-white/10" />
+                  <div className="h-3 w-20 rounded bg-white/5" />
+                </div>
+                <div className="h-4 w-16 rounded bg-white/10 hidden md:block" />
+                <div className="h-4 w-16 rounded bg-white/10 hidden md:block" />
+              </div>
+            ))}
           </div>
         ) : error ? (
           <div className="glass rounded-xl p-16 text-center">
