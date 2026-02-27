@@ -11,7 +11,7 @@ import { api } from "@/lib/api";
 import { formatCurrency } from "@/lib/utils";
 import type { Bounty, PlatformStats } from "@/lib/types";
 
-function parseTags(val: any): string[] {
+function parseTags(val: unknown): string[] {
   if (Array.isArray(val)) return val;
   if (typeof val === "string") { try { return JSON.parse(val); } catch { return []; } }
   return [];
@@ -96,7 +96,7 @@ export default function HomePage() {
 
     api.bounties.list({ status: "open" })
       .then((data) => {
-        setFeaturedBounties(data.slice(0, 3).map((b: any) => ({
+        setFeaturedBounties(data.slice(0, 3).map((b) => ({
           ...b, tags: parseTags(b.tags), tech_stack: parseTags(b.tech_stack),
         })));
         setBountiesLoading(false);

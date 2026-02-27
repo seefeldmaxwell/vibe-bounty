@@ -10,7 +10,7 @@ import { cn, formatCurrency, formatDate, timeAgo } from "@/lib/utils";
 import { SubmissionStatusBadge } from "@/components/badges";
 import { api } from "@/lib/api";
 
-function parseTags(val: any): string[] {
+function parseTags(val: unknown): string[] {
   if (Array.isArray(val)) return val;
   if (typeof val === "string") { try { return JSON.parse(val); } catch { return []; } }
   return [];

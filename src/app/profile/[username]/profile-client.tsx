@@ -12,7 +12,7 @@ import { api } from "@/lib/api";
 
 type ProfileTab = "bounties" | "submissions";
 
-function parseTags(val: any): string[] {
+function parseTags(val: unknown): string[] {
   if (Array.isArray(val)) return val;
   if (typeof val === "string") { try { return JSON.parse(val); } catch { return []; } }
   return [];

@@ -9,7 +9,7 @@ import { Bounty } from "@/lib/types";
 
 type SortOption = "newest" | "highest" | "deadline" | "submissions";
 
-function parseTags(val: any): string[] {
+function parseTags(val: unknown): string[] {
   if (Array.isArray(val)) return val;
   if (typeof val === "string") {
     try {
