@@ -1,3 +1,5 @@
+import type { User, Bounty, Submission, Comment, PlatformStats } from "./types";
+
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "https://vibe-bounty-api.seefeldmaxwell1.workers.dev";
 
 function getToken(): string | null {
@@ -40,52 +42,57 @@ export class ApiError extends Error {
   }
 }
 
+interface AuthResponse {
+  user: User;
+  token: string;
+}
+
 // Auth
 export const api = {
   auth: {
     google: (code: string, redirect_uri: string) =>
-      request<{ user: any; token: string }>("/api/auth/google", {
+      request<AuthResponse>("/api/auth/google", {
         method: "POST",
         body: JSON.stringify({ code, redirect_uri }),
       }),
     microsoft: (code: string, redirect_uri: string) =>
-      request<{ user: any; token: string }>("/api/auth/microsoft", {
+      request<AuthResponse>("/api/auth/microsoft", {
         method: "POST",
         body: JSON.stringify({ code, redirect_uri }),
       }),
     login: (email: string, password: string) =>
-      request<{ user: any; token: string }>("/api/auth/login", {
+      request<AuthResponse>("/api/auth/login", {
         method: "POST",
         body: JSON.stringify({ email, password }),
       }),
     signup: (data: { username: string; email: string; password: string; role?: string }) =>
-      request<{ user: any; token: string }>("/api/auth/signup", {
+      request<AuthResponse>("/api/auth/signup", {
         method: "POST",
         body: JSON.stringify(data),
       }),
-    me: () => request<any>("/api/auth/me"),
+    me: () => request<User>("/api/auth/me"),
   },
 
   bounties: {
     list: (params?: Record<string, string>) => {
       const qs = params ? "?" + new URLSearchParams(params).toString() : "";
-      return request<any[]>(`/api/bounties${qs}`);
+      return request<Bounty[]>(`/api/bounties${qs}`);
     },
-    get: (id: string) => request<any>(`/api/bounties/${id}`),
-    create: (data: any) =>
-      request<any>("/api/bounties", {
+    get: (id: string) => request<Bounty>(`/api/bounties/${id}`),
+    create: (data: Partial<Bounty>) =>
+      request<Bounty>("/api/bounties", {
         method: "POST",
         body: JSON.stringify(data),
       }),
-    update: (id: string, data: any) =>
-      request<any>(`/api/bounties/${id}`, {
+    update: (id: string, data: Partial<Bounty>) =>
+      request<Bounty>(`/api/bounties/${id}`, {
         method: "PUT",
         body: JSON.stringify(data),
       }),
     delete: (id: string) =>
-      request<any>(`/api/bounties/${id}`, { method: "DELETE" }),
+      request<{ success: boolean }>(`/api/bounties/${id}`, { method: "DELETE" }),
     award: (id: string, submissionId: string) =>
-      request<any>(`/api/bounties/${id}/award`, {
+      request<Bounty>(`/api/bounties/${id}/award`, {
         method: "POST",
         body: JSON.stringify({ submission_id: submissionId }),
       }),
@@ -94,50 +101,50 @@ export const api = {
   submissions: {
     list: (params?: Record<string, string>) => {
       const qs = params ? "?" + new URLSearchParams(params).toString() : "";
-      return request<any[]>(`/api/submissions${qs}`);
+      return request<Submission[]>(`/api/submissions${qs}`);
     },
-    get: (id: string) => request<any>(`/api/submissions/${id}`),
-    create: (data: any) =>
-      request<any>("/api/submissions", {
+    get: (id: string) => request<Submission>(`/api/submissions/${id}`),
+    create: (data: Partial<Submission>) =>
+      request<Submission>("/api/submissions", {
         method: "POST",
         body: JSON.stringify(data),
       }),
-    update: (id: string, data: any) =>
-      request<any>(`/api/submissions/${id}`, {
+    update: (id: string, data: Partial<Submission>) =>
+      request<Submission>(`/api/submissions/${id}`, {
         method: "PUT",
         body: JSON.stringify(data),
       }),
     score: (id: string, score: number, feedback: string) =>
-      request<any>(`/api/submissions/${id}/score`, {
+      request<Submission>(`/api/submissions/${id}/score`, {
         method: "POST",
         body: JSON.stringify({ score, feedback }),
       }),
   },
 
   comments: {
-    list: (bountyId: string) => request<any[]>(`/api/comments/${bountyId}`),
+    list: (bountyId: string) => request<Comment[]>(`/api/comments/${bountyId}`),
     create: (data: { bounty_id: string; content: string; submission_id?: string }) =>
-      request<any>("/api/comments", {
+      request<Comment>("/api/comments", {
         method: "POST",
         body: JSON.stringify(data),
       }),
     delete: (id: string) =>
-      request<any>(`/api/comments/${id}`, { method: "DELETE" }),
+      request<{ success: boolean }>(`/api/comments/${id}`, { method: "DELETE" }),
   },
 
   users: {
-    get: (username: string) => request<any>(`/api/users/${username}`),
-    updateMe: (data: any) =>
-      request<any>("/api/users/me", {
+    get: (username: string) => request<User>(`/api/users/${username}`),
+    updateMe: (data: Partial<User>) =>
+      request<User>("/api/users/me", {
         method: "PUT",
         body: JSON.stringify(data),
       }),
   },
 
-  stats: () => request<any>("/api/stats"),
+  stats: () => request<PlatformStats>("/api/stats"),
 
   leaderboard: (type: "builders" | "posters") =>
-    request<any[]>(`/api/leaderboard?type=${type}`),
+    request<User[]>(`/api/leaderboard?type=${type}`),
 
   upload: async (submissionId: string, files: File[]) => {
     const token = getToken();
@@ -156,6 +163,6 @@ export const api = {
       throw new ApiError(res.status, (body as { error?: string }).error || "Upload failed");
     }
 
-    return res.json();
+    return res.json() as Promise<{ urls: string[] }>;
   },
 };

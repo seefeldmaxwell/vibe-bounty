@@ -24,7 +24,7 @@ export const metadata: Metadata = {
     title: "VibeBounty — Ship Code. Get Paid.",
     description: "The bug bounty platform for vibe coders. Post bounties, build solutions, earn rewards.",
     type: "website",
-    url: "https://vibe-bounty.pages.dev",
+    url: "https://vibe-bounty-web.seefeldmaxwell1.workers.dev",
   },
   twitter: {
     card: "summary_large_image",

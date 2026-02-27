@@ -186,8 +186,8 @@ export default function DashboardPage() {
         setBounties(posterBounties || []);
         setSubmissions(allSubs || []);
       }
-    } catch (err: any) {
-      toast(err.message || "Failed to load dashboard data", "error");
+    } catch (err) {
+      toast(err instanceof Error ? err.message : "Failed to load dashboard data", "error");
     } finally {
       setDataLoading(false);
     }

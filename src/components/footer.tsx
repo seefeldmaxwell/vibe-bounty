@@ -15,7 +15,7 @@ const footerLinks = {
   Company: [
     { label: "About", href: "/how-it-works" },
     { label: "GitHub", href: "https://github.com/seefeldmaxwell/vibe-bounty" },
-    { label: "Twitter", href: "https://twitter.com" },
+    { label: "Twitter", href: "https://x.com/vibebounty" },
   ],
 };
 
@@ -69,10 +69,10 @@ export function Footer() {
             &copy; {new Date().getFullYear()} VibeBounty. Built with vibes.
           </p>
           <div className="flex items-center gap-4">
-            <a href="https://github.com/seefeldmaxwell/vibe-bounty" className="text-muted-foreground hover:text-foreground transition-all hover:scale-110">
+            <a href="https://github.com/seefeldmaxwell/vibe-bounty" aria-label="GitHub" className="text-muted-foreground hover:text-foreground transition-all hover:scale-110">
               <Github className="h-4 w-4" />
             </a>
-            <a href="https://twitter.com" className="text-muted-foreground hover:text-foreground transition-all hover:scale-110">
+            <a href="https://x.com/vibebounty" aria-label="Twitter" className="text-muted-foreground hover:text-foreground transition-all hover:scale-110">
               <Twitter className="h-4 w-4" />
             </a>
           </div>

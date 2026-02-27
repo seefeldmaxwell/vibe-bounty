@@ -54,8 +54,8 @@ export default function SignupPage() {
       await signup({ username: form.username, email: form.email, password: form.password, role: selectedRole || "builder" });
       toast("Account created! Welcome to VibeBounty.", "success");
       router.push("/dashboard");
-    } catch (err: any) {
-      toast(err.message || "Signup failed", "error");
+    } catch (err) {
+      toast(err instanceof Error ? err.message : "Signup failed", "error");
     } finally {
       setLoading(false);
     }

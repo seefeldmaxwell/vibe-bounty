@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import { cn, formatCurrency } from "@/lib/utils";
 import { api } from "@/lib/api";
+import type { Bounty } from "@/lib/types";
 import { useAuth } from "@/lib/auth-context";
 import { useToast } from "@/components/toast";
 
@@ -15,7 +16,7 @@ export default function SubmitToBountyClient({ id }: { id: string }) {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
   const { toast } = useToast();
-  const [bounty, setBounty] = useState<any>(null);
+  const [bounty, setBounty] = useState<Bounty | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [form, setForm] = useState({ title: "", description: "", repoUrl: "", previewUrl: "", techUsed: "" });
@@ -47,17 +48,36 @@ export default function SubmitToBountyClient({ id }: { id: string }) {
     else if (e.type === "dragleave") setDragActive(false);
   };
 
+  const MAX_FILES = 5;
+  const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
+
+  const addFiles = (newFiles: File[]) => {
+    const valid = newFiles.filter((f) => {
+      if (f.size > MAX_FILE_SIZE) {
+        toast(`${f.name} exceeds 50MB limit`, "error");
+        return false;
+      }
+      return true;
+    });
+    setFiles((prev) => {
+      if (prev.length + valid.length > MAX_FILES) {
+        toast(`Maximum ${MAX_FILES} files allowed`, "error");
+        return prev;
+      }
+      return [...prev, ...valid];
+    });
+  };
+
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
     setDragActive(false);
-    const newFiles = Array.from(e.dataTransfer.files);
-    setFiles((prev) => [...prev, ...newFiles]);
+    addFiles(Array.from(e.dataTransfer.files));
   };
 
   const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
-      setFiles((prev) => [...prev, ...Array.from(e.target.files!)]);
+      addFiles(Array.from(e.target.files));
     }
   };
 
@@ -87,8 +107,8 @@ export default function SubmitToBountyClient({ id }: { id: string }) {
 
       toast("Submission created successfully!", "success");
       router.push(`/bounties/${id}`);
-    } catch (err: any) {
-      toast(err.message || "Failed to submit", "error");
+    } catch (err) {
+      toast(err instanceof Error ? err.message : "Failed to submit", "error");
     } finally {
       setSubmitting(false);
     }

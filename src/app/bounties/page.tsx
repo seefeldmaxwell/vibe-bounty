@@ -100,9 +100,9 @@ export default function BountiesPage() {
         }));
 
         setBounties(parsed);
-      } catch (err: any) {
+      } catch (err) {
         if (cancelled) return;
-        setError(err?.message || "Failed to load bounties");
+        setError(err instanceof Error ? err.message : "Failed to load bounties");
       } finally {
         if (!cancelled) {
           setLoading(false);

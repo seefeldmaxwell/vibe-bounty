@@ -85,8 +85,8 @@ export default function SettingsPage() {
       setSaved(true);
       toast("Settings saved!", "success");
       setTimeout(() => setSaved(false), 2000);
-    } catch (err: any) {
-      toast(err.message || "Failed to save settings", "error");
+    } catch (err) {
+      toast(err instanceof Error ? err.message : "Failed to save settings", "error");
     } finally {
       setSaving(false);
     }
@@ -130,7 +130,7 @@ export default function SettingsPage() {
                 <div className="relative group">
                   <img
                     src={avatarUrl}
-                    alt="Avatar"
+                    alt={`${currentUser.display_name || currentUser.username}'s avatar`}
                     className="h-20 w-20 rounded-xl ring-2 ring-accent/20 bg-card"
                   />
                   <div className="absolute inset-0 flex items-center justify-center rounded-xl bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">

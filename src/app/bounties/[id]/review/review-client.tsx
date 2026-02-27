@@ -10,10 +10,11 @@ import {
 import { cn, formatCurrency } from "@/lib/utils";
 import { SubmissionStatusBadge } from "@/components/badges";
 import { api } from "@/lib/api";
+import type { Bounty, Submission } from "@/lib/types";
 import { useAuth } from "@/lib/auth-context";
 import { useToast } from "@/components/toast";
 
-function parseTags(val: any): string[] {
+function parseTags(val: unknown): string[] {
   if (Array.isArray(val)) return val;
   if (typeof val === "string") { try { return JSON.parse(val); } catch { return []; } }
   return [];
@@ -23,8 +24,8 @@ export default function ReviewPortalClient({ id }: { id: string }) {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
   const { toast } = useToast();
-  const [bounty, setBounty] = useState<any>(null);
-  const [submissions, setSubmissions] = useState<any[]>([]);
+  const [bounty, setBounty] = useState<Bounty | null>(null);
+  const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -80,12 +81,12 @@ export default function ReviewPortalClient({ id }: { id: string }) {
           <div className="w-px h-10 bg-border" />
           <div>
             <p className="text-xs text-muted-foreground font-mono">Reviewed</p>
-            <p className="text-2xl font-bold font-mono text-accent">{submissions.filter((s: any) => s.score != null).length}</p>
+            <p className="text-2xl font-bold font-mono text-accent">{submissions.filter((s) => s.score != null).length}</p>
           </div>
           <div className="w-px h-10 bg-border" />
           <div>
             <p className="text-xs text-muted-foreground font-mono">Awarded</p>
-            <p className="text-2xl font-bold font-mono text-neon">{submissions.filter((s: any) => s.status === "winner").length}</p>
+            <p className="text-2xl font-bold font-mono text-neon">{submissions.filter((s) => s.status === "winner").length}</p>
           </div>
         </div>
 
@@ -99,7 +100,7 @@ export default function ReviewPortalClient({ id }: { id: string }) {
           </div>
         ) : (
           <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 stagger-children">
-            {submissions.map((submission: any) => (
+            {submissions.map((submission) => (
               <SubmissionReviewCard key={submission.id} submission={submission} bountyId={id} onUpdate={refreshSubmissions} />
             ))}
           </div>
@@ -109,6 +110,7 @@ export default function ReviewPortalClient({ id }: { id: string }) {
   );
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function SubmissionReviewCard({ submission, bountyId, onUpdate }: { submission: any; bountyId: string; onUpdate: () => void }) {
   const { toast } = useToast();
   const [score, setScore] = useState(submission.score ?? 5);
@@ -128,8 +130,8 @@ function SubmissionReviewCard({ submission, bountyId, onUpdate }: { submission: 
       await api.submissions.score(submission.id, score, feedback);
       toast("Review saved!", "success");
       onUpdate();
-    } catch (err: any) {
-      toast(err.message || "Failed to save review", "error");
+    } catch (err) {
+      toast(err instanceof Error ? err.message : "Failed to save review", "error");
     } finally {
       setSaving(false);
     }
@@ -141,8 +143,8 @@ function SubmissionReviewCard({ submission, bountyId, onUpdate }: { submission: 
       await api.bounties.award(bountyId, submission.id);
       toast("Bounty awarded!", "success");
       onUpdate();
-    } catch (err: any) {
-      toast(err.message || "Failed to award bounty", "error");
+    } catch (err) {
+      toast(err instanceof Error ? err.message : "Failed to award bounty", "error");
     } finally {
       setAwarding(false);
     }
@@ -206,7 +208,7 @@ function SubmissionReviewCard({ submission, bountyId, onUpdate }: { submission: 
 
         <div className="space-y-2">
           <label className="text-sm font-medium text-foreground/80 font-mono">Feedback</label>
-          <textarea value={feedback} onChange={(e) => setFeedback(e.target.value)} placeholder="Share your thoughts..." rows={3}
+          <textarea value={feedback} onChange={(e) => setFeedback(e.target.value.slice(0, 5000))} placeholder="Share your thoughts..." rows={3} maxLength={5000}
             className="w-full px-3 py-2.5 bg-card border border-border rounded-xl text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-accent/50 focus:ring-1 focus:ring-accent/25 transition-colors text-sm resize-none" />
         </div>
 

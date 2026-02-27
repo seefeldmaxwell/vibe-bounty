@@ -30,8 +30,8 @@ export default function LoginPage() {
       await login(email, password);
       toast("Welcome back!", "success");
       router.push("/dashboard");
-    } catch (err: any) {
-      toast(err.message || "Invalid credentials", "error");
+    } catch (err) {
+      toast(err instanceof Error ? err.message : "Invalid credentials", "error");
     } finally {
       setLoading(false);
     }

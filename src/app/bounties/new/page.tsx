@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { cn, CATEGORIES, DIFFICULTIES, formatCurrency } from "@/lib/utils";
 import { CategoryBadge, DifficultyBadge } from "@/components/badges";
+import type { Bounty } from "@/lib/types";
 import { useAuth } from "@/lib/auth-context";
 import { useToast } from "@/components/toast";
 import { api } from "@/lib/api";
@@ -67,16 +68,16 @@ export default function NewBountyPage() {
         budget_max: Number(form.budgetMax),
         deadline: form.deadline ? new Date(form.deadline).toISOString() : undefined,
         category: form.category,
-        difficulty: form.difficulty,
+        difficulty: form.difficulty as Bounty["difficulty"],
         tags: parsedTags,
         tech_stack: parsedTech,
         visibility: form.visibility ? "public" : "invite_only",
         max_submissions: Number(form.maxSubmissions) || 10,
-      });
+      } as Partial<Bounty>);
       toast("Bounty published!", "success");
       router.push(`/bounties/${bounty.id}`);
-    } catch (err: any) {
-      toast(err.message || "Failed to create bounty", "error");
+    } catch (err) {
+      toast(err instanceof Error ? err.message : "Failed to create bounty", "error");
     } finally {
       setSubmitting(false);
     }

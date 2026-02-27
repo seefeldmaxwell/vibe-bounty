@@ -19,6 +19,7 @@ import {
 import { api, ApiError } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import { useToast } from "@/components/toast";
+import type { Bounty, Submission, Comment } from "@/lib/types";
 import {
   cn,
   formatCurrency,
@@ -37,7 +38,7 @@ import {
 // Helpers
 // ---------------------------------------------------------------------------
 
-function parseTags(val: any): string[] {
+function parseTags(val: unknown): string[] {
   if (Array.isArray(val)) return val;
   if (typeof val === "string") {
     try {
@@ -50,6 +51,7 @@ function parseTags(val: any): string[] {
 }
 
 /** Normalise poster info that may arrive as flat fields or nested object. */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function normalisePoster(bounty: any) {
   if (bounty.poster && typeof bounty.poster === "object") return bounty.poster;
   if (bounty.poster_username) {
@@ -66,6 +68,7 @@ function normalisePoster(bounty: any) {
 }
 
 /** Normalise builder info on a submission. */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function normaliseBuilder(sub: any) {
   if (sub.builder && typeof sub.builder === "object") return sub.builder;
   if (sub.builder_username) {
@@ -79,6 +82,7 @@ function normaliseBuilder(sub: any) {
 }
 
 /** Normalise user info on a comment. */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function normaliseCommentUser(comment: any) {
   if (comment.user && typeof comment.user === "object") return comment.user;
   // API returns username, display_name, avatar_url directly on comment
@@ -199,9 +203,9 @@ export default function BountyDetailClient({ id }: { id: string }) {
   const { toast } = useToast();
 
   // Data state
-  const [bounty, setBounty] = useState<any>(null);
-  const [submissions, setSubmissions] = useState<any[]>([]);
-  const [comments, setComments] = useState<any[]>([]);
+  const [bounty, setBounty] = useState<Bounty | null>(null);
+  const [submissions, setSubmissions] = useState<Submission[]>([]);
+  const [comments, setComments] = useState<Comment[]>([]);
 
   // Loading / error state
   const [loading, setLoading] = useState(true);
@@ -594,8 +598,9 @@ export default function BountyDetailClient({ id }: { id: string }) {
                     <input
                       type="text"
                       value={commentText}
-                      onChange={(e) => setCommentText(e.target.value)}
+                      onChange={(e) => setCommentText(e.target.value.slice(0, 2000))}
                       placeholder="Add a comment..."
+                      maxLength={2000}
                       disabled={submittingComment}
                       className="flex-1 rounded-lg border border-border bg-background px-4 py-2.5 text-sm placeholder:text-muted-foreground focus:outline-none focus:border-accent/50 disabled:opacity-50"
                     />

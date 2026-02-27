@@ -22,25 +22,22 @@ export type Env = {
 
 const app = new Hono<{ Bindings: Env }>();
 
-// CORS
-app.use(
-  "*",
-  cors({
+// CORS — reads FRONTEND_URL from env at request time
+app.use("*", async (c, next) => {
+  const frontendUrl = c.env.FRONTEND_URL || "https://vibe-bounty-web.seefeldmaxwell1.workers.dev";
+  const allowed = [frontendUrl, "http://localhost:3000"];
+  const handler = cors({
     origin: (origin) => {
-      if (!origin) return "https://vibe-bounty-web.seefeldmaxwell1.workers.dev";
-      if (
-        origin === "http://localhost:3000" ||
-        origin === "https://vibe-bounty.pages.dev" ||
-        origin.endsWith(".vibe-bounty.pages.dev") ||
-        origin === "https://vibe-bounty-web.seefeldmaxwell1.workers.dev"
-      ) return origin;
-      return "https://vibe-bounty-web.seefeldmaxwell1.workers.dev";
+      if (!origin) return frontendUrl;
+      if (allowed.includes(origin)) return origin;
+      return frontendUrl;
     },
     allowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowHeaders: ["Content-Type", "Authorization"],
     credentials: true,
-  })
-);
+  });
+  return handler(c, next);
+});
 
 // Global rate limit: 120 requests per minute per IP
 app.use("/api/*", rateLimit({ max: 120, windowMs: 60_000 }));
