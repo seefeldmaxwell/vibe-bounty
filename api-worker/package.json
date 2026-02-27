@@ -1,0 +1,21 @@
+{
+  "name": "vibe-bounty-api",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "db:migrate": "wrangler d1 execute vibe-bounty-db --local --file=./schema.sql",
+    "db:seed": "wrangler d1 execute vibe-bounty-db --local --file=./seed.sql",
+    "db:migrate:remote": "wrangler d1 execute vibe-bounty-db --remote --file=./schema.sql",
+    "db:seed:remote": "wrangler d1 execute vibe-bounty-db --remote --file=./seed.sql"
+  },
+  "dependencies": {
+    "hono": "^4.7.0"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20250214.0",
+    "typescript": "^5.7.0",
+    "wrangler": "^4.0.0"
+  }
+}

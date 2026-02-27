@@ -1,0 +1,12 @@
+name = "vibe-bounty-api"
+main = "src/index.ts"
+compatibility_date = "2025-02-10"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "vibe-bounty-db"
+database_id = "placeholder-will-be-set-after-creation"
+
+[[r2_buckets]]
+binding = "R2"
+bucket_name = "vibe-bounty-submissions"
