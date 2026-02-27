@@ -53,11 +53,15 @@ function parseTags(val: unknown): string[] {
 /** Normalise poster info that may arrive as flat fields or nested object. */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function normalisePoster(bounty: any) {
-  if (bounty.poster && typeof bounty.poster === "object") return bounty.poster;
+  if (bounty.poster && typeof bounty.poster === "object") {
+    const p = bounty.poster;
+    return { ...p, avatar_url: p.avatar_url || `https://api.dicebear.com/9.x/bottts-neutral/svg?seed=${p.username}` };
+  }
   if (bounty.poster_username) {
+    const username = bounty.poster_username;
     return {
-      username: bounty.poster_username,
-      avatar_url: bounty.poster_avatar_url || bounty.poster_avatar,
+      username,
+      avatar_url: bounty.poster_avatar_url || bounty.poster_avatar || `https://api.dicebear.com/9.x/bottts-neutral/svg?seed=${username}`,
       display_name: bounty.poster_display_name,
       reputation: bounty.poster_reputation,
       total_posted: bounty.poster_total_posted,
@@ -70,12 +74,16 @@ function normalisePoster(bounty: any) {
 /** Normalise builder info on a submission. */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function normaliseBuilder(sub: any) {
-  if (sub.builder && typeof sub.builder === "object") return sub.builder;
+  if (sub.builder && typeof sub.builder === "object") {
+    const b = sub.builder;
+    return { ...b, avatar_url: b.avatar_url || `https://api.dicebear.com/9.x/bottts-neutral/svg?seed=${b.username}` };
+  }
   if (sub.builder_username) {
+    const username = sub.builder_username;
     return {
-      username: sub.builder_username,
+      username,
       display_name: sub.builder_display_name,
-      avatar_url: sub.builder_avatar_url || sub.builder_avatar,
+      avatar_url: sub.builder_avatar_url || sub.builder_avatar || `https://api.dicebear.com/9.x/bottts-neutral/svg?seed=${username}`,
     };
   }
   return null;
@@ -84,13 +92,16 @@ function normaliseBuilder(sub: any) {
 /** Normalise user info on a comment. */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function normaliseCommentUser(comment: any) {
-  if (comment.user && typeof comment.user === "object") return comment.user;
-  // API returns username, display_name, avatar_url directly on comment
+  if (comment.user && typeof comment.user === "object") {
+    const u = comment.user;
+    return { ...u, avatar_url: u.avatar_url || `https://api.dicebear.com/9.x/bottts-neutral/svg?seed=${u.username}` };
+  }
   if (comment.username) {
+    const username = comment.username;
     return {
-      username: comment.username,
+      username,
       display_name: comment.display_name,
-      avatar_url: comment.avatar_url,
+      avatar_url: comment.avatar_url || `https://api.dicebear.com/9.x/bottts-neutral/svg?seed=${username}`,
     };
   }
   return null;
