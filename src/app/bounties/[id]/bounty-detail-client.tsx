@@ -13,6 +13,7 @@ import {
   Tag,
   MessageSquare,
   Eye,
+  Trash2,
   Loader2,
 } from "lucide-react";
 import { api, ApiError } from "@/lib/api";
@@ -284,6 +285,16 @@ export default function BountyDetailClient({ id }: { id: string }) {
     }
   }
 
+  async function handleDeleteComment(commentId: string) {
+    try {
+      await api.comments.delete(commentId);
+      setComments((prev) => prev.filter((c) => c.id !== commentId));
+      toast("Comment deleted", "success");
+    } catch (err) {
+      toast(err instanceof ApiError ? err.message : "Failed to delete comment", "error");
+    }
+  }
+
   // -----------------------------------------------------------------------
   // Loading state
   // -----------------------------------------------------------------------
@@ -550,6 +561,15 @@ export default function BountyDetailClient({ id }: { id: string }) {
                             <span className="text-xs text-muted-foreground">
                               {timeAgo(comment.created_at)}
                             </span>
+                            {user && comment.user_id === user.id && (
+                              <button
+                                onClick={() => handleDeleteComment(comment.id)}
+                                className="ml-auto p-1 rounded text-muted-foreground/50 hover:text-danger hover:bg-danger/10 transition-colors"
+                                title="Delete comment"
+                              >
+                                <Trash2 className="h-3 w-3" />
+                              </button>
+                            )}
                           </div>
                           <p className="text-sm text-muted leading-relaxed">
                             {comment.content}

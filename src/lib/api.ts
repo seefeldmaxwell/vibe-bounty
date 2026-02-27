@@ -111,6 +111,8 @@ export const api = {
         method: "POST",
         body: JSON.stringify(data),
       }),
+    delete: (id: string) =>
+      request<any>(`/api/comments/${id}`, { method: "DELETE" }),
   },
 
   users: {
